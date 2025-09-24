@@ -1,15 +1,10 @@
 import React, { useState } from 'react';
 import { User, Mail, BookOpen, Search, Plus, Edit3, Trash2, Calendar, Phone, AlertCircle, Clock, GraduationCap } from 'lucide-react';
 import { Student, WeeklySchedule, TimeSlot } from '../types';
+import { useStudents } from '../hooks/useStudents';
 
-interface StudentsViewProps {
-  students: Student[];
-  onAddStudent: (student: Omit<Student, 'id'>) => void;
-  onUpdateStudent: (id: string, student: Partial<Student>) => void;
-  onDeleteStudent: (id: string) => void;
-}
-
-export default function StudentsView({ students, onAddStudent, onUpdateStudent, onDeleteStudent }: StudentsViewProps) {
+export default function StudentsView() {
+  const { students, loading, error, addStudent, updateStudent, deleteStudent } = useStudents();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -17,6 +12,8 @@ export default function StudentsView({ students, onAddStudent, onUpdateStudent, 
   const [filterLevel, setFilterLevel] = useState('');
   const [filterSubject, setFilterSubject] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -52,13 +49,38 @@ export default function StudentsView({ students, onAddStudent, onUpdateStudent, 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingStudent) {
-      onUpdateStudent(editingStudent.id, formData);
-      setEditingStudent(null);
-    } else {
-      onAddStudent(formData);
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    const submitAction = async () => {
+      try {
+        if (editingStudent) {
+          await updateStudent(editingStudent.id, formData);
+          setEditingStudent(null);
+        } else {
+          await addStudent(formData);
+        }
+        resetForm();
+      } catch (err) {
+        setSubmitError(err instanceof Error ? err.message : 'Failed to save student');
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
+    submitAction();
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this student? This action cannot be undone.')) {
+      return;
     }
-    resetForm();
+
+    try {
+      await deleteStudent(id);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete student');
+    }
   };
 
   const resetForm = () => {
@@ -162,6 +184,17 @@ export default function StudentsView({ students, onAddStudent, onUpdateStudent, 
     const totalSlots = Object.values(schedule).reduce((acc, slots) => acc + (slots?.length || 0), 0);
     return `${scheduledDays} days, ${totalSlots} sessions`;
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading students...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (viewingStudent) {
     return (
@@ -304,6 +337,17 @@ export default function StudentsView({ students, onAddStudent, onUpdateStudent, 
 
   return (
     <div className="space-y-6">
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="h-5 w-5 text-red-600" />
+            <p className="text-red-800 font-medium">Error</p>
+          </div>
+          <p className="text-red-700 mt-1">{error}</p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
@@ -378,6 +422,17 @@ export default function StudentsView({ students, onAddStudent, onUpdateStudent, 
             {editingStudent ? 'Edit Student' : 'Add New Student'}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Submit Error Display */}
+            {submitError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-center space-x-2">
+                  <AlertCircle className="h-5 w-5 text-red-600" />
+                  <p className="text-red-800 font-medium">Validation Error</p>
+                </div>
+                <p className="text-red-700 mt-1">{submitError}</p>
+              </div>
+            )}
+
             {/* Basic Information */}
             <div>
               <h3 className="text-md font-medium text-gray-900 mb-3">Basic Information</h3>
@@ -606,14 +661,19 @@ export default function StudentsView({ students, onAddStudent, onUpdateStudent, 
             <div className="flex space-x-4">
               <button
                 type="submit"
-                className="bg-blue-600 text-white font-medium py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors"
+                disabled={isSubmitting}
+                className="bg-blue-600 text-white font-medium py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
               >
-                {editingStudent ? 'Update Student' : 'Add Student'}
+                {isSubmitting && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                )}
+                <span>{editingStudent ? 'Update Student' : 'Add Student'}</span>
               </button>
               <button
                 type="button"
                 onClick={resetForm}
-                className="bg-gray-200 text-gray-800 font-medium py-2 px-6 rounded-lg hover:bg-gray-300 transition-colors"
+                disabled={isSubmitting}
+                className="bg-gray-200 text-gray-800 font-medium py-2 px-6 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
@@ -690,6 +750,7 @@ export default function StudentsView({ students, onAddStudent, onUpdateStudent, 
                 </button>
                 <button
                   onClick={() => onDeleteStudent(student.id)}
+                  onClick={() => handleDelete(student.id)}
                   className="bg-red-500 text-white font-medium py-2 px-3 rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center"
                 >
                   <Trash2 className="h-4 w-4" />
