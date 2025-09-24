@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 import AttendanceView from './components/AttendanceView';
@@ -50,13 +52,17 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header activeView={activeView} onViewChange={setActiveView} />
-      
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {renderView()}
-      </main>
-    </div>
+    <AuthProvider>
+      <ProtectedRoute>
+        <div className="min-h-screen bg-gray-50">
+          <Header activeView={activeView} onViewChange={setActiveView} />
+          
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {renderView()}
+          </main>
+        </div>
+      </ProtectedRoute>
+    </AuthProvider>
   );
 }
 

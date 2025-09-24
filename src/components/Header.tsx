@@ -1,5 +1,6 @@
 import React from 'react';
 import { GraduationCap, Users, Clock, BarChart3 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 interface HeaderProps {
   activeView: string;
@@ -7,6 +8,8 @@ interface HeaderProps {
 }
 
 export default function Header({ activeView, onViewChange }: HeaderProps) {
+  const { user, signOut } = useAuth();
+
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'attendance', label: 'Attendance', icon: Clock },
@@ -50,11 +53,35 @@ export default function Header({ activeView, onViewChange }: HeaderProps) {
 
           <div className="flex items-center space-x-4">
             <div className="text-right">
-              <p className="text-sm font-medium text-gray-900">Administrator</p>
+              <p className="text-sm font-medium text-gray-900">
+                {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Administrator'}
+              </p>
               <p className="text-xs text-gray-500">Live Session</p>
             </div>
-            <div className="w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-sm font-semibold">A</span>
+            <div className="relative group">
+              <div className="w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-amber-600 transition-colors">
+                <span className="text-white text-sm font-semibold">
+                  {user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || 'A'}
+                </span>
+              </div>
+              
+              {/* Dropdown Menu */}
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className="p-3 border-b border-gray-100">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {user?.user_metadata?.full_name || 'Administrator'}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                </div>
+                <div className="p-1">
+                  <button
+                    onClick={signOut}
+                    className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
