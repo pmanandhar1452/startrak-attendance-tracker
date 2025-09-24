@@ -193,7 +193,7 @@ export default function AttendanceView({ attendanceRecords, students, sessions, 
                       {student?.name || 'Unknown Student'}
                     </h3>
                     <p className="text-xs text-gray-500">{student?.studentId}</p>
-                    <p className="text-xs text-gray-500">{student?.program}</p>
+                    <p className="text-xs text-gray-500">{student?.subject}</p>
                   </div>
                 </div>
 
