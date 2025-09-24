@@ -3,8 +3,32 @@ export interface Student {
   name: string;
   studentId: string;
   email: string;
-  program: string;
+  level: string;
+  subject: string;
+  program?: string;
   avatar?: string;
+  schedule: WeeklySchedule;
+  enrollmentDate: string;
+  status: 'active' | 'inactive' | 'suspended';
+  contactNumber?: string;
+  emergencyContact?: string;
+  notes?: string;
+}
+
+export interface WeeklySchedule {
+  monday?: TimeSlot[];
+  tuesday?: TimeSlot[];
+  wednesday?: TimeSlot[];
+  thursday?: TimeSlot[];
+  friday?: TimeSlot[];
+  saturday?: TimeSlot[];
+  sunday?: TimeSlot[];
+}
+
+export interface TimeSlot {
+  startTime: string;
+  endTime: string;
+  sessionType?: string;
 }
 
 export interface Session {
