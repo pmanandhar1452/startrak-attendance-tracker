@@ -128,8 +128,7 @@ export class UserService {
         .upsert({
           id: authData.user.id,
           full_name: request.fullName,
-          role_id: roleData.id,
-          phone: request.phone || null
+          role_id: roleData.id
         });
 
       if (profileError) {
@@ -168,8 +167,7 @@ export class UserService {
       .insert({
         id: user.id,
         full_name: request.fullName,
-        role_id: roleData.id,
-        phone: request.phone || null
+        role_id: roleData.id
       });
 
     if (profileError) {
