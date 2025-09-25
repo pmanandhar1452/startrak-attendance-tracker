@@ -132,46 +132,38 @@ export class IDCardService {
       ctx.textAlign = 'center';
       ctx.fillText('Keep this card with you at all times', canvas.width / 2, 580);
 
-      // Convert canvas to blob
-      const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((blob) => resolve(blob!), 'image/png', 0.9);
-      });
+      // Convert canvas to data URL (base64)
+      const dataUrl = canvas.toDataURL('image/png', 0.9);
+      
+      // Try to upload to storage, but fallback to data URL if it fails
+      try {
+        const blob = await new Promise<Blob>((resolve) => {
+          canvas.toBlob((blob) => resolve(blob!), 'image/png', 0.9);
+        });
 
-      // Upload to storage with retry logic
-      const fileName = `id-card-${template.studentId}-${Date.now()}.png`;
-      let uploadAttempts = 0;
-      const maxAttempts = 3;
+        const fileName = `id-card-${template.studentId}-${Date.now()}.png`;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('id-cards')
+          .upload(fileName, blob, {
+            contentType: 'image/png',
+            upsert: true
+          });
 
-      while (uploadAttempts < maxAttempts) {
-        try {
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('id-cards')
-            .upload(fileName, blob, {
-              contentType: 'image/png',
-              upsert: true
-            });
-
-          if (uploadError) {
-            throw uploadError;
-          }
-
-          // Get public URL
+        if (!uploadError) {
+          // Get public URL if upload succeeded
           const { data: urlData } = supabase.storage
             .from('id-cards')
             .getPublicUrl(fileName);
-
+          
           return urlData.publicUrl;
-        } catch (error) {
-          uploadAttempts++;
-          if (uploadAttempts >= maxAttempts) {
-            throw new Error(`Failed to upload ID card after ${maxAttempts} attempts: ${error}`);
-          }
-          // Wait before retry
-          await new Promise(resolve => setTimeout(resolve, 1000 * uploadAttempts));
         }
+      } catch (storageError) {
+        console.warn('Storage upload failed, using data URL fallback:', storageError);
       }
-
-      throw new Error('Failed to upload ID card');
+      
+      // Return data URL as fallback
+      return dataUrl;
     } catch (error) {
       console.error('ID card generation error:', error);
       throw error;
