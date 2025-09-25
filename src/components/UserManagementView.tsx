@@ -22,8 +22,7 @@ export default function UserManagementView() {
     role: 'parent',
     linkedStudentIds: [],
     phone: '',
-    emergencyContact: '',
-    address: ''
+    emergencyContact: ''
   });
 
   const [linkFormData, setLinkFormData] = useState<string[]>([]);

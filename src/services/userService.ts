@@ -211,8 +211,7 @@ export class UserService {
       .insert({
         user_id: userId,
         qr_code: qrCode,
-        emergency_contact: request.emergencyContact || null,
-        address: request.address || null
+        emergency_contact: request.emergencyContact || null
       })
       .select()
       .single();
@@ -350,7 +349,6 @@ export class UserService {
       qrCode: parent.qr_code || undefined,
       qrCodeUrl: parent.qr_code_url || undefined,
       emergencyContact: parent.emergency_contact || undefined,
-      address: parent.address || undefined,
       linkedStudents: parentLinks.map((link: any) => ({
         id: link.students?.id || '',
         name: link.students?.name || '',

@@ -86,7 +86,6 @@ export interface Parent {
   qrCode?: string;
   qrCodeUrl?: string;
   emergencyContact?: string;
-  address?: string;
   linkedStudents: Student[];
   createdAt: string;
   updatedAt: string;
@@ -100,5 +99,4 @@ export interface CreateUserRequest {
   linkedStudentIds?: string[];
   phone?: string;
   emergencyContact?: string;
-  address?: string;
 }
