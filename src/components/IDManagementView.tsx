@@ -192,7 +192,7 @@ export default function IDManagementView() {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">ID Management</h1>
-            <p className="text-gray-600">View and manage all generated student IDs</p>
+            <p className="text-3xl font-bold text-purple-600">{statistics?.byType?.qr_code || 0}</p>
           </div>
 
           <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
