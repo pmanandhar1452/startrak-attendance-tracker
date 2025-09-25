@@ -73,18 +73,6 @@ export class StudentService {
       enrollment_date: student.enrollmentDate,
       status: student.status,
       notes: student.notes || null
-      name: student.name,
-      student_id: student.studentId,
-      email: student.email,
-      level: student.level as any,
-      subject: student.subject,
-      program: student.program || null,
-      avatar: student.avatar || null,
-      contact_number: student.contactNumber || null,
-      emergency_contact: student.emergencyContact || null,
-      enrollment_date: student.enrollmentDate,
-      status: student.status,
-      notes: student.notes || null
     };
 
     const { data: studentData, error: studentError } = await supabase
