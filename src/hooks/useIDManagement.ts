@@ -4,12 +4,7 @@ import { IDManagementService } from '../services/idManagementService';
 
 export function useIDManagement() {
   const [generatedIDs, setGeneratedIDs] = useState<GeneratedID[]>([]);
-  const [statistics, setStatistics] = useState<{
-    totalIds: number;
-    activeIds: number;
-    expiredIds: number;
-    byType?: Record<string, number>;
-  } | null>(null);
+  const [statistics, setStatistics] = useState<IDStatistics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
