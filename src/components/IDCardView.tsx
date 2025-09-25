@@ -35,11 +35,18 @@ export default function IDCardView() {
     setSuccessMessage(null);
 
     try {
+      // Initialize storage before generating
+      await import('../services/idCardService').then(module => 
+        module.IDCardService.initializeStorage()
+      );
+      
       const template = await generateIDCard(student);
       setGeneratedCards(prev => [...prev.filter(c => c.studentId !== student.id), template]);
       setSuccessMessage(`ID card generated for ${student.name}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate ID card');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate ID card';
+      setError(`ID Card Generation Error: ${errorMessage}`);
+      console.error('ID card generation failed:', err);
     } finally {
       setIsGenerating(false);
     }
@@ -56,6 +63,11 @@ export default function IDCardView() {
     setSuccessMessage(null);
 
     try {
+      // Initialize storage before batch generation
+      await import('../services/idCardService').then(module => 
+        module.IDCardService.initializeStorage()
+      );
+      
       const selectedStudentObjects = students.filter(s => selectedStudents.includes(s.id));
       const templates = await batchGenerateIDCards(selectedStudentObjects);
       
@@ -74,7 +86,9 @@ export default function IDCardView() {
       setSuccessMessage(`Generated ${templates.length} ID cards successfully`);
       setSelectedStudents([]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate ID cards');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate ID cards';
+      setError(`Batch Generation Error: ${errorMessage}`);
+      console.error('Batch generation failed:', err);
     } finally {
       setIsGenerating(false);
     }

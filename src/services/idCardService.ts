@@ -6,11 +6,262 @@ type StudentQRCodeRow = Database['public']['Tables']['student_qr_codes']['Row'];
 type StudentQRCodeInsert = Database['public']['Tables']['student_qr_codes']['Insert'];
 
 export class IDCardService {
-  // Initialize storage buckets
+  // Initialize storage buckets with proper error handling
   static async initializeStorage(): Promise<void> {
     try {
-      // Create QR codes bucket
-      const { error: qrBucketError } = await supabase.storage.createBucket('qr-codes', {
+      // Check if buckets exist first
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const existingBuckets = buckets?.map(b => b.name) || [];
+
+      // Create QR codes bucket if it doesn't exist
+      if (!existingBuckets.includes('qr-codes')) {
+        const { error: qrBucketError } = await supabase.storage.createBucket('qr-codes', {
+          public: true,
+          allowedMimeTypes: ['image/png', 'image/jpeg'],
+          fileSizeLimit: 1024 * 1024 // 1MB
+        });
+
+        if (qrBucketError) {
+          console.warn('Failed to create qr-codes bucket:', qrBucketError.message);
+        }
+      }
+
+      // Create ID cards bucket if it doesn't exist
+      if (!existingBuckets.includes('id-cards')) {
+        const { error: cardsBucketError } = await supabase.storage.createBucket('id-cards', {
+          public: true,
+          allowedMimeTypes: ['image/png', 'image/jpeg', 'application/pdf'],
+          fileSizeLimit: 5 * 1024 * 1024 // 5MB
+        });
+
+        if (cardsBucketError) {
+          console.warn('Failed to create id-cards bucket:', cardsBucketError.message);
+        }
+      }
+
+      // Set up bucket policies for public access
+      await this.setupBucketPolicies();
+    } catch (error) {
+      console.warn('Storage initialization error:', error);
+    }
+  }
+
+  // Setup bucket policies for public access
+  private static async setupBucketPolicies(): Promise<void> {
+    try {
+      // Note: In a real Supabase project, you would set up RLS policies
+      // For demo purposes, we'll rely on the public bucket setting
+      console.log('Storage buckets initialized with public access');
+    } catch (error) {
+      console.warn('Failed to setup bucket policies:', error);
+    }
+  }
+
+  // Fallback method to create buckets during operation
+  private static async ensureBucketExists(bucketName: string): Promise<void> {
+    try {
+      // Try to get bucket info
+      const { data, error } = await supabase.storage.getBucket(bucketName);
+      
+      if (error && error.message.includes('not found')) {
+        // Bucket doesn't exist, create it
+        const bucketConfig = bucketName === 'qr-codes' ? {
+          public: true,
+          allowedMimeTypes: ['image/png', 'image/jpeg'],
+          fileSizeLimit: 1024 * 1024
+        } : {
+          public: true,
+          allowedMimeTypes: ['image/png', 'image/jpeg', 'application/pdf'],
+          fileSizeLimit: 5 * 1024 * 1024
+        };
+
+        const { error: createError } = await supabase.storage.createBucket(bucketName, bucketConfig);
+        if (createError) {
+          console.warn(`Failed to create ${bucketName} bucket:`, createError.message);
+        }
+      }
+    } catch (error) {
+      console.warn(`Error ensuring ${bucketName} bucket exists:`, error);
+    }
+  }
+
+  // Enhanced QR code image generation with bucket creation
+  static async generateQRCodeImage(qrCode: string): Promise<string> {
+    try {
+      // Ensure bucket exists
+      await this.ensureBucketExists('qr-codes');
+
+      // Generate QR code using external API
+      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&format=png&data=${encodeURIComponent(qrCode)}`;
+      
+      const response = await fetch(qrApiUrl);
+      if (!response.ok) {
+        throw new Error('Failed to generate QR code image');
+      }
+
+      const blob = await response.blob();
+      
+      // Upload to Supabase Storage
+      const fileName = `${qrCode}.png`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('qr-codes')
+        .upload(fileName, blob, {
+          contentType: 'image/png',
+          upsert: true
+        });
+
+      if (uploadError) {
+        console.warn('Failed to upload QR code to storage:', uploadError.message);
+        return qrApiUrl; // Return direct API URL as fallback
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('qr-codes')
+        .getPublicUrl(fileName);
+
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error('QR code generation error:', error);
+      // Fallback to direct API URL
+      return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&format=png&data=${encodeURIComponent(qrCode)}`;
+    }
+  }
+
+  // Enhanced ID card image generation with bucket creation
+  static async generateIDCardImage(template: IDCardTemplate): Promise<string> {
+    try {
+      // Ensure bucket exists
+      await this.ensureBucketExists('id-cards');
+
+      // Create canvas for ID card
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Failed to get canvas context');
+
+      // Set card dimensions (standard ID card size: 3.375" x 2.125" at 300 DPI)
+      canvas.width = 1012; // 3.375 * 300
+      canvas.height = 638;  // 2.125 * 300
+
+      // Card background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Card border
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+      // Header background
+      ctx.fillStyle = '#3b82f6';
+      ctx.fillRect(0, 0, canvas.width, 120);
+
+      // Header text
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 36px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('StarTrak Academy', canvas.width / 2, 50);
+      ctx.font = '24px Arial, sans-serif';
+      ctx.fillText('Student ID Card', canvas.width / 2, 85);
+
+      // Student name
+      ctx.fillStyle = '#1f2937';
+      ctx.font = 'bold 48px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(template.studentName, canvas.width / 2, 200);
+
+      // Student ID
+      ctx.font = '32px Arial, sans-serif';
+      ctx.fillStyle = '#6b7280';
+      ctx.fillText(`ID: ${template.studentId}`, canvas.width / 2, 250);
+
+      // QR Code section
+      if (template.qrCodeUrl) {
+        try {
+          const qrImage = new Image();
+          qrImage.crossOrigin = 'anonymous';
+          
+          await new Promise((resolve, reject) => {
+            qrImage.onload = resolve;
+            qrImage.onerror = reject;
+            qrImage.src = template.qrCodeUrl;
+          });
+
+          // Draw QR code
+          const qrSize = 200;
+          const qrX = (canvas.width - qrSize) / 2;
+          const qrY = 300;
+          
+          ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
+          
+          // QR code label
+          ctx.font = '20px Arial, sans-serif';
+          ctx.fillStyle = '#6b7280';
+          ctx.textAlign = 'center';
+          ctx.fillText('Scan for Attendance', canvas.width / 2, 530);
+        } catch (error) {
+          console.warn('Failed to load QR code image:', error);
+          // Draw placeholder
+          ctx.fillStyle = '#f3f4f6';
+          ctx.fillRect((canvas.width - 200) / 2, 300, 200, 200);
+          ctx.fillStyle = '#9ca3af';
+          ctx.font = '24px Arial, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('QR Code', canvas.width / 2, 410);
+        }
+      }
+
+      // Footer
+      ctx.font = '18px Arial, sans-serif';
+      ctx.fillStyle = '#9ca3af';
+      ctx.textAlign = 'center';
+      ctx.fillText('Keep this card with you at all times', canvas.width / 2, 580);
+
+      // Convert canvas to blob
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => resolve(blob!), 'image/png', 0.9);
+      });
+
+      // Upload to storage with retry logic
+      const fileName = `id-card-${template.studentId}-${Date.now()}.png`;
+      let uploadAttempts = 0;
+      const maxAttempts = 3;
+
+      while (uploadAttempts < maxAttempts) {
+        try {
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('id-cards')
+            .upload(fileName, blob, {
+              contentType: 'image/png',
+              upsert: true
+            });
+
+          if (uploadError) {
+            throw uploadError;
+          }
+
+          // Get public URL
+          const { data: urlData } = supabase.storage
+            .from('id-cards')
+            .getPublicUrl(fileName);
+
+          return urlData.publicUrl;
+        } catch (error) {
+          uploadAttempts++;
+          if (uploadAttempts >= maxAttempts) {
+            throw new Error(`Failed to upload ID card after ${maxAttempts} attempts: ${error}`);
+          }
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 1000 * uploadAttempts));
+        }
+      }
+
+      throw new Error('Failed to upload ID card');
+    } catch (error) {
+      console.error('ID card generation error:', error);
+      throw error;
+    }
+  }
         public: true,
         allowedMimeTypes: ['image/png', 'image/jpeg'],
         fileSizeLimit: 1024 * 1024 // 1MB
