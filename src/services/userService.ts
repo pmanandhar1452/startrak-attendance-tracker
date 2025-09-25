@@ -224,6 +224,9 @@ export class UserService {
       const linkInserts = request.linkedStudentIds.map(studentId => ({
         student_id: studentId,
         parent_id: parentData.id
+      }
+      )
+      )
       const { error: linkError } = await supabase
         .from('student_parent_link')
         .insert(linkInserts);
