@@ -304,35 +304,7 @@ export class StudentService {
       });
     });
 
-    const studentSchedules = schedules.filter(s => s.student_id === student.id);
-    const schedule: WeeklySchedule = {};
-
-    studentSchedules.forEach(s => {
-      if (!schedule[s.day_of_week as keyof WeeklySchedule]) {
-        schedule[s.day_of_week as keyof WeeklySchedule] = [];
-      }
-      schedule[s.day_of_week as keyof WeeklySchedule]!.push({
-        startTime: s.start_time,
-        endTime: s.end_time,
-        sessionType: s.session_type || undefined
-      });
-    });
-
     return {
-      id: student.id,
-      name: student.name,
-      studentId: student.student_id,
-      email: student.email,
-      level: student.level,
-      subject: student.subject,
-      program: student.program || undefined,
-      avatar: student.avatar || undefined,
-      contactNumber: student.contact_number || undefined,
-      emergencyContact: student.emergency_contact || undefined,
-      enrollmentDate: student.enrollment_date,
-      status: student.status,
-      notes: student.notes || undefined,
-      schedule
       id: student.id,
       name: student.name,
       studentId: student.student_id,
