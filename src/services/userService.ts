@@ -21,7 +21,6 @@ export class UserService {
   }
 
   static async getAllParents(): Promise<Parent[]> {
-    // First get parents with user profiles
     const { data: parentsData, error: parentsError } = await supabase
       .from('parents')
       .select(`
@@ -29,7 +28,7 @@ export class UserService {
         user_id,
         qr_code,
         created_at,
-        user_profiles (
+        user_profiles!inner (
           id,
           full_name,
           role_id,
@@ -42,7 +41,6 @@ export class UserService {
       throw new Error(`Failed to fetch parents: ${parentsError.message}`);
     }
 
-    // Get roles separately
     const { data: rolesData, error: rolesError } = await supabase
       .from('roles')
       .select('*');
@@ -51,13 +49,12 @@ export class UserService {
       throw new Error(`Failed to fetch roles: ${rolesError.message}`);
     }
 
-    // Get student links separately
     const { data: linksData, error: linksError } = await supabase
       .from('student_parent_link')
       .select(`
         parent_id,
         student_id,
-        students (
+        students!inner (
           id,
           name,
           student_id,
