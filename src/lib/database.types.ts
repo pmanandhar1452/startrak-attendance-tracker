@@ -277,6 +277,35 @@ export interface Database {
           updated_at?: string
         }
       }
+      student_qr_codes: {
+        Row: {
+          id: string
+          student_id: string
+          qr_code: string
+          qr_code_url: string | null
+          is_active: boolean | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          qr_code: string
+          qr_code_url?: string | null
+          is_active?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          qr_code?: string
+          qr_code_url?: string | null
+          is_active?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      }
     }
     Views: {
       [_ in never]: never

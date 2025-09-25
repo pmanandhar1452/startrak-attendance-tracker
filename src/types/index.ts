@@ -97,3 +97,22 @@ export interface CreateUserRequest {
   role: 'admin' | 'parent' | 'instructor';
   linkedStudentIds?: string[];
 }
+
+export interface StudentQRCode {
+  id: string;
+  studentId: string;
+  qrCode: string;
+  qrCodeUrl?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IDCardTemplate {
+  studentId: string;
+  studentName: string;
+  studentId: string;
+  qrCode: string;
+  qrCodeUrl: string;
+  cardUrl?: string;
+}
