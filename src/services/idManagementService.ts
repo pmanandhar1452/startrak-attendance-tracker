@@ -61,17 +61,30 @@ export class IDManagementService {
 
   // Get ID statistics
   static async getIDStatistics(): Promise<IDStatistics> {
-    const { data, error } = await supabase.rpc('get_id_statistics');
+    const { data, error } = await supabase
+      .from('generated_ids')
+      .select(`
+        id_type,
+        status
+      `);
 
     if (error) {
       throw new Error(`Failed to fetch ID statistics: ${error.message}`);
     }
 
+    const totalIds = data.length;
+    const activeIds = data.filter(item => item.status === 'active').length;
+    const expiredIds = data.filter(item => item.status === 'expired').length;
+    const typeBreakdown = data.reduce((acc: Record<string, number>, item: any) => {
+      acc[item.id_type] = (acc[item.id_type] || 0) + 1;
+      return acc;
+    }, {});
+
     return {
-      totalIds: data?.total_ids || 0,
-      activeIds: data?.active_ids || 0,
-      expiredIds: data?.expired_ids || 0,
-      byType: data?.by_type || {}
+      totalIds,
+      activeIds,
+      expiredIds,
+      typeBreakdown
     };
   }
 
