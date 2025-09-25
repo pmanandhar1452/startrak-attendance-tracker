@@ -21,24 +21,27 @@ export class UserService {
   }
 
   static async getAllParents(): Promise<Parent[]> {
+    // First, fetch all parent records
     const { data: parentsData, error: parentsError } = await supabase
       .from('parents')
-      .select(`
-        id,
-        user_id,
-        qr_code,
-        created_at,
-        user_profiles!inner (
-          id,
-          full_name,
-          role_id,
-          created_at
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (parentsError) {
       throw new Error(`Failed to fetch parents: ${parentsError.message}`);
+    }
+
+    // Extract user IDs from parents
+    const userIds = parentsData.map(parent => parent.user_id).filter(Boolean);
+    
+    // Fetch user profiles separately
+    const { data: userProfilesData, error: profilesError } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .in('id', userIds);
+
+    if (profilesError) {
+      throw new Error(`Failed to fetch user profiles: ${profilesError.message}`);
     }
 
     const { data: rolesData, error: rolesError } = await supabase
@@ -68,7 +71,7 @@ export class UserService {
       throw new Error(`Failed to fetch student links: ${linksError.message}`);
     }
 
-    return parentsData.map(parent => this.mapParentFromDB(parent, rolesData, linksData));
+    return parentsData.map(parent => this.mapParentFromDB(parent, userProfilesData, rolesData, linksData));
   }
 
   static async createUserWithProfile(request: CreateUserRequest): Promise<{ user: any; parent?: Parent }> {
@@ -209,19 +212,20 @@ export class UserService {
     };
   }
 
-  private static mapParentFromDB(parent: any, roles: any[], links: any[]): Parent {
-    const role = roles.find(r => r.id === parent.user_profiles?.role_id);
+  private static mapParentFromDB(parent: any, userProfiles: any[], roles: any[], links: any[]): Parent {
+    const userProfile = userProfiles.find(up => up.id === parent.user_id);
+    const role = roles.find(r => r.id === userProfile?.role_id);
     const parentLinks = links.filter(l => l.parent_id === parent.id);
 
     return {
       id: parent.id,
       userId: parent.user_id,
-      userProfile: parent.user_profiles ? {
-        id: parent.user_profiles.id,
-        fullName: parent.user_profiles.full_name,
-        roleId: parent.user_profiles.role_id,
+      userProfile: userProfile ? {
+        id: userProfile.id,
+        fullName: userProfile.full_name,
+        roleId: userProfile.role_id,
         roleName: role?.role_name,
-        createdAt: parent.user_profiles.created_at
+        createdAt: userProfile.created_at
       } : undefined,
       qrCode: parent.qr_code,
       linkedStudents: parentLinks.map((link: any) => ({
