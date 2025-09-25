@@ -226,69 +226,6 @@ export class StudentService {
     }
   }
 
-  private static async validateScheduleConflicts(schedule: WeeklySchedule, excludeStudentId?: string): Promise<void> {
-    for (const [day, slots] of Object.entries(schedule)) {
-      if (!slots || slots.length === 0) continue;
-
-      for (const slot of slots) {
-        const { data: hasConflict, error } = await supabase
-          .rpc('check_schedule_conflict', {
-            p_student_id: excludeStudentId || '00000000-0000-0000-0000-000000000000',
-            p_day_of_week: day,
-            p_start_time: slot.startTime,
-            p_end_time: slot.endTime,
-            p_exclude_id: excludeStudentId || null
-          });
-
-        if (error) {
-          throw new Error(`Failed to validate schedule: ${error.message}`);
-        }
-
-        if (hasConflict && !excludeStudentId) {
-          throw new Error(`Schedule conflict detected on ${day} from ${slot.startTime} to ${slot.endTime}`);
-        }
-      }
-    }
-  }
-
-  private static async updateStudentSchedule(studentId: string, schedule: WeeklySchedule): Promise<void> {
-    // Delete existing schedule
-    const { error: deleteError } = await supabase
-      .from('student_schedules')
-      .delete()
-      .eq('student_id', studentId);
-
-    if (deleteError) {
-      throw new Error(`Failed to update schedule: ${deleteError.message}`);
-    }
-
-    // Insert new schedule
-    const scheduleInserts = [];
-    for (const [day, slots] of Object.entries(schedule)) {
-      if (!slots || slots.length === 0) continue;
-
-      for (const slot of slots) {
-        scheduleInserts.push({
-          student_id: studentId,
-          day_of_week: day as any,
-          start_time: slot.startTime,
-          end_time: slot.endTime,
-          session_type: slot.sessionType || null
-        });
-      }
-    }
-
-    if (scheduleInserts.length > 0) {
-      const { error: insertError } = await supabase
-        .from('student_schedules')
-        .insert(scheduleInserts);
-
-      if (insertError) {
-        throw new Error(`Failed to insert schedule: ${insertError.message}`);
-      }
-    }
-  }
-
   private static mapStudentFromDB(student: StudentRow, schedules: ScheduleRow[]): Student {
     const studentSchedules = schedules.filter(s => s.student_id === student.id);
     const schedule: WeeklySchedule = {};
