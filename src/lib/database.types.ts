@@ -9,6 +9,110 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      user_profiles: {
+        Row: {
+          id: string
+          full_name: string | null
+          role_id: string | null
+          avatar_url: string | null
+          phone: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          full_name?: string | null
+          role_id?: string | null
+          avatar_url?: string | null
+          phone?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          full_name?: string | null
+          role_id?: string | null
+          avatar_url?: string | null
+          phone?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      roles: {
+        Row: {
+          id: string
+          role_name: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          role_name: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          role_name?: string
+          created_at?: string
+        }
+      }
+      parents: {
+        Row: {
+          id: string
+          user_id: string | null
+          qr_code: string | null
+          qr_code_url: string | null
+          emergency_contact: string | null
+          address: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          qr_code?: string | null
+          qr_code_url?: string | null
+          emergency_contact?: string | null
+          address?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          qr_code?: string | null
+          qr_code_url?: string | null
+          emergency_contact?: string | null
+          address?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      student_parent_link: {
+        Row: {
+          id: string
+          student_id: string | null
+          parent_id: string | null
+          relationship_type: string | null
+          is_primary: boolean | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          student_id?: string | null
+          parent_id?: string | null
+          relationship_type?: string | null
+          is_primary?: boolean | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          student_id?: string | null
+          parent_id?: string | null
+          relationship_type?: string | null
+          is_primary?: boolean | null
+          created_at?: string
+        }
+      }
       students: {
         Row: {
           id: string
@@ -26,6 +130,7 @@ export interface Database {
           notes: string | null
           created_at: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           id?: string
@@ -43,6 +148,7 @@ export interface Database {
           notes?: string | null
           created_at?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           id?: string
@@ -60,6 +166,7 @@ export interface Database {
           notes?: string | null
           created_at?: string
           updated_at?: string
+          user_id?: string | null
         }
       }
       student_schedules: {

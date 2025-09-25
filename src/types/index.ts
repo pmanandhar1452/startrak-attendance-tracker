@@ -61,3 +61,44 @@ export interface AttendanceStats {
   completed: number;
   absent: number;
 }
+
+export interface UserProfile {
+  id: string;
+  fullName?: string;
+  roleId?: string;
+  roleName?: string;
+  avatarUrl?: string;
+  phone?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Role {
+  id: string;
+  roleName: string;
+  createdAt: string;
+}
+
+export interface Parent {
+  id: string;
+  userId?: string;
+  userProfile?: UserProfile;
+  qrCode?: string;
+  qrCodeUrl?: string;
+  emergencyContact?: string;
+  address?: string;
+  linkedStudents: Student[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateUserRequest {
+  email: string;
+  password: string;
+  fullName: string;
+  role: 'admin' | 'parent' | 'instructor';
+  linkedStudentIds?: string[];
+  phone?: string;
+  emergencyContact?: string;
+  address?: string;
+}

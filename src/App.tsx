@@ -6,6 +6,7 @@ import Dashboard from './components/Dashboard';
 import AttendanceView from './components/AttendanceView';
 import StudentsView from './components/StudentsView';
 import SessionsView from './components/SessionsView';
+import UserManagementView from './components/UserManagementView';
 import { useStudents } from './hooks/useStudents';
 import { useSessions } from './hooks/useSessions';
 import { useAttendance } from './hooks/useAttendance';
@@ -46,6 +47,8 @@ function App() {
             onDeleteSession={deleteSession}
           />
         );
+      case 'users':
+        return <UserManagementView />;
       default:
         return <Dashboard attendanceRecords={attendanceRecords} students={students} sessions={sessions} />;
     }

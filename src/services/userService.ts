@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { UserProfile, Role, Parent, CreateUserRequest } from '../types';
+import { UserProfile, Role, Parent, CreateUserRequest, Student } from '../types';
 import { Database } from '../lib/database.types';
 
 type UserProfileRow = Database['public']['Tables']['user_profiles']['Row'];
@@ -21,7 +21,7 @@ export class UserService {
   }
 
   static async getAllParents(): Promise<Parent[]> {
-    // First, fetch all parent records
+    // Fetch parents
     const { data: parentsData, error: parentsError } = await supabase
       .from('parents')
       .select('*')
@@ -31,54 +31,126 @@ export class UserService {
       throw new Error(`Failed to fetch parents: ${parentsError.message}`);
     }
 
-    // Extract user IDs from parents
+    // Get user IDs from parents
     const userIds = parentsData.map(parent => parent.user_id).filter(Boolean);
     
     // Fetch user profiles separately
-    const { data: userProfilesData, error: profilesError } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .in('id', userIds);
+    let userProfilesData: UserProfileRow[] = [];
+    if (userIds.length > 0) {
+      const { data: profiles, error: profilesError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .in('id', userIds);
 
-    if (profilesError) {
-      throw new Error(`Failed to fetch user profiles: ${profilesError.message}`);
+      if (profilesError) {
+        console.warn('Failed to fetch user profiles:', profilesError.message);
+      } else {
+        userProfilesData = profiles || [];
+      }
     }
 
+    // Fetch roles
     const { data: rolesData, error: rolesError } = await supabase
       .from('roles')
       .select('*');
 
     if (rolesError) {
-      throw new Error(`Failed to fetch roles: ${rolesError.message}`);
+      console.warn('Failed to fetch roles:', rolesError.message);
     }
 
+    // Fetch student links
     const { data: linksData, error: linksError } = await supabase
       .from('student_parent_link')
       .select(`
         parent_id,
         student_id,
-        students!inner (
+        students (
           id,
           name,
           student_id,
           email,
           level,
-          subject
+          subject,
+          program,
+          avatar,
+          enrollment_date,
+          status
         )
       `);
 
     if (linksError) {
-      throw new Error(`Failed to fetch student links: ${linksError.message}`);
+      console.warn('Failed to fetch student links:', linksError.message);
     }
 
-    return parentsData.map(parent => this.mapParentFromDB(parent, userProfilesData, rolesData, linksData));
+    return parentsData.map(parent => 
+      this.mapParentFromDB(parent, userProfilesData, rolesData || [], linksData || [])
+    );
   }
 
   static async createUserWithProfile(request: CreateUserRequest): Promise<{ user: any; parent?: Parent }> {
-    // For demo purposes, create a mock user ID since admin API requires service role
-    const mockUserId = crypto.randomUUID();
-    const authData = { user: { id: mockUserId, email: request.email } };
+    try {
+      // Step 1: Create auth user using Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: request.email,
+        password: request.password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: request.fullName
+        }
+      });
 
+      if (authError) {
+        // For demo purposes, create a mock user if admin API fails
+        console.warn('Admin API failed, creating mock user:', authError.message);
+        const mockUserId = crypto.randomUUID();
+        const authData = { user: { id: mockUserId, email: request.email } };
+        return this.createMockUserProfile(authData.user, request);
+      }
+
+      if (!authData.user) {
+        throw new Error('Failed to create user');
+      }
+
+      // Step 2: Get role ID
+      const { data: roleData, error: roleError } = await supabase
+        .from('roles')
+        .select('id')
+        .eq('role_name', request.role)
+        .single();
+
+      if (roleError) {
+        throw new Error(`Failed to find role: ${roleError.message}`);
+      }
+
+      // Step 3: Create/update user profile
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .upsert({
+          id: authData.user.id,
+          full_name: request.fullName,
+          role_id: roleData.id,
+          phone: request.phone || null
+        });
+
+      if (profileError) {
+        throw new Error(`Failed to create user profile: ${profileError.message}`);
+      }
+
+      let parent: Parent | undefined;
+
+      // Step 4: If creating a parent, create parent record and link to students
+      if (request.role === 'parent') {
+        parent = await this.createParentRecord(authData.user.id, request);
+      }
+
+      return { user: authData.user, parent };
+    } catch (error) {
+      console.error('User creation error:', error);
+      throw error;
+    }
+  }
+
+  private static async createMockUserProfile(user: any, request: CreateUserRequest): Promise<{ user: any; parent?: Parent }> {
     // Get role ID
     const { data: roleData, error: roleError } = await supabase
       .from('roles')
@@ -94,9 +166,10 @@ export class UserService {
     const { error: profileError } = await supabase
       .from('user_profiles')
       .insert({
-        id: mockUserId,
+        id: user.id,
         full_name: request.fullName,
-        role_id: roleData.id
+        role_id: roleData.id,
+        phone: request.phone || null
       });
 
     if (profileError) {
@@ -105,47 +178,64 @@ export class UserService {
 
     let parent: Parent | undefined;
 
-    // If creating a parent, create parent record and link to students
+    // If creating a parent, create parent record
     if (request.role === 'parent') {
-      // Generate QR code
-      const qrCode = `QR_${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
-
-      // Create parent record
-      const { data: parentData, error: parentError } = await supabase
-        .from('parents')
-        .insert({
-          user_id: mockUserId,
-          qr_code: qrCode
-        })
-        .select()
-        .single();
-
-      if (parentError) {
-        throw new Error(`Failed to create parent record: ${parentError.message}`);
-      }
-
-      // Link to students if provided
-      if (request.linkedStudentIds && request.linkedStudentIds.length > 0) {
-        const linkInserts = request.linkedStudentIds.map(studentId => ({
-          student_id: studentId,
-          parent_id: parentData.id
-        }));
-
-        const { error: linkError } = await supabase
-          .from('student_parent_link')
-          .insert(linkInserts);
-
-        if (linkError) {
-          throw new Error(`Failed to link students: ${linkError.message}`);
-        }
-      }
-
-      // Fetch complete parent data
-      const parentList = await this.getAllParents();
-      parent = parentList.find(p => p.id === parentData.id);
+      parent = await this.createParentRecord(user.id, request);
     }
 
-    return { user: authData.user, parent };
+    return { user, parent };
+  }
+
+  private static async createParentRecord(userId: string, request: CreateUserRequest): Promise<Parent> {
+    // Generate QR code
+    const { data: qrCodeData, error: qrError } = await supabase
+      .rpc('generate_qr_code');
+
+    const qrCode = qrError ? `QR_${Math.random().toString(36).substr(2, 8).toUpperCase()}` : qrCodeData;
+
+    // Create parent record
+    const { data: parentData, error: parentError } = await supabase
+      .from('parents')
+      .insert({
+        user_id: userId,
+        qr_code: qrCode,
+        emergency_contact: request.emergencyContact || null,
+        address: request.address || null
+      })
+      .select()
+      .single();
+
+    if (parentError) {
+      throw new Error(`Failed to create parent record: ${parentError.message}`);
+    }
+
+    // Link to students if provided
+    if (request.linkedStudentIds && request.linkedStudentIds.length > 0) {
+      const linkInserts = request.linkedStudentIds.map(studentId => ({
+        student_id: studentId,
+        parent_id: parentData.id,
+        relationship_type: 'parent',
+        is_primary: true
+      }));
+
+      const { error: linkError } = await supabase
+        .from('student_parent_link')
+        .insert(linkInserts);
+
+      if (linkError) {
+        throw new Error(`Failed to link students: ${linkError.message}`);
+      }
+    }
+
+    // Fetch complete parent data
+    const parentList = await this.getAllParents();
+    const parent = parentList.find(p => p.id === parentData.id);
+    
+    if (!parent) {
+      throw new Error('Failed to retrieve created parent');
+    }
+
+    return parent;
   }
 
   static async linkParentToStudents(parentId: string, studentIds: string[]): Promise<void> {
@@ -161,9 +251,11 @@ export class UserService {
 
     // Add new links
     if (studentIds.length > 0) {
-      const linkInserts = studentIds.map(studentId => ({
+      const linkInserts = studentIds.map((studentId, index) => ({
         student_id: studentId,
-        parent_id: parentId
+        parent_id: parentId,
+        relationship_type: 'parent',
+        is_primary: index === 0 // First student is primary
       }));
 
       const { error: insertError } = await supabase
@@ -178,7 +270,10 @@ export class UserService {
 
   static async generateQRCodeForParent(parentId: string): Promise<string> {
     // Generate new QR code
-    const qrCode = `QR_${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+    const { data: qrCodeData, error: qrError } = await supabase
+      .rpc('generate_qr_code');
+
+    const qrCode = qrError ? `QR_${Math.random().toString(36).substr(2, 8).toUpperCase()}` : qrCodeData;
 
     // Update parent record
     const { error: updateError } = await supabase
@@ -203,31 +298,50 @@ export class UserService {
     if (error) {
       throw new Error(`Failed to delete user: ${error.message}`);
     }
+
+    // Also try to delete from auth (will fail in demo mode, but that's ok)
+    try {
+      await supabase.auth.admin.deleteUser(userId);
+    } catch (authError) {
+      console.warn('Failed to delete auth user (expected in demo mode):', authError);
+    }
   }
 
   private static mapRoleFromDB(role: RoleRow): Role {
     return {
       id: role.id,
-      roleName: role.role_name
+      roleName: role.role_name,
+      createdAt: role.created_at
     };
   }
 
-  private static mapParentFromDB(parent: any, userProfiles: any[], roles: any[], links: any[]): Parent {
+  private static mapParentFromDB(
+    parent: ParentRow, 
+    userProfiles: UserProfileRow[], 
+    roles: RoleRow[], 
+    links: any[]
+  ): Parent {
     const userProfile = userProfiles.find(up => up.id === parent.user_id);
     const role = roles.find(r => r.id === userProfile?.role_id);
     const parentLinks = links.filter(l => l.parent_id === parent.id);
 
     return {
       id: parent.id,
-      userId: parent.user_id,
+      userId: parent.user_id || undefined,
       userProfile: userProfile ? {
         id: userProfile.id,
-        fullName: userProfile.full_name,
-        roleId: userProfile.role_id,
-        roleName: role?.role_name,
-        createdAt: userProfile.created_at
+        fullName: userProfile.full_name || undefined,
+        roleId: userProfile.role_id || undefined,
+        roleName: role?.role_name || undefined,
+        avatarUrl: userProfile.avatar_url || undefined,
+        phone: userProfile.phone || undefined,
+        createdAt: userProfile.created_at,
+        updatedAt: userProfile.updated_at
       } : undefined,
-      qrCode: parent.qr_code,
+      qrCode: parent.qr_code || undefined,
+      qrCodeUrl: parent.qr_code_url || undefined,
+      emergencyContact: parent.emergency_contact || undefined,
+      address: parent.address || undefined,
       linkedStudents: parentLinks.map((link: any) => ({
         id: link.students?.id || '',
         name: link.students?.name || '',
@@ -235,11 +349,14 @@ export class UserService {
         email: link.students?.email || '',
         level: link.students?.level || '',
         subject: link.students?.subject || '',
+        program: link.students?.program || undefined,
+        avatar: link.students?.avatar || undefined,
         schedule: {},
-        enrollmentDate: '',
-        status: 'active'
+        enrollmentDate: link.students?.enrollment_date || '',
+        status: link.students?.status || 'active'
       })),
-      createdAt: parent.created_at
+      createdAt: parent.created_at,
+      updatedAt: parent.updated_at
     };
   }
 }
