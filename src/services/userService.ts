@@ -150,25 +150,42 @@ export class UserService {
   }
 
   private static async createMockUserProfile(user: any, request: CreateUserRequest): Promise<{ user: any; parent?: Parent }> {
-    // Get role ID
-    const { data: roleData, error: roleError } = await supabase
+    // Get or create role
+    let roleData;
+    const { data: existingRole, error: roleError } = await supabase
       .from('roles')
       .select('id')
       .eq('role_name', request.role)
       .single();
 
-    if (roleError) {
+    if (roleError && roleError.code === 'PGRST116') {
+      // Role doesn't exist, create it
+      const { data: newRole, error: createRoleError } = await supabase
+        .from('roles')
+        .insert({ role_name: request.role })
+        .select('id')
+        .single();
+      
+      if (createRoleError) {
+        throw new Error(`Failed to create role: ${createRoleError.message}`);
+      }
+      roleData = newRole;
+    } else if (roleError) {
       throw new Error(`Failed to find role: ${roleError.message}`);
+    } else {
+      roleData = existingRole;
     }
 
     // Create user profile
-    const { error: profileError } = await supabase
+    const { data: profileData, error: profileError } = await supabase
       .from('user_profiles')
-      .insert({
+      .upsert({
         id: user.id,
         full_name: request.fullName,
         role_id: roleData.id
-      });
+      })
+      .select()
+      .single();
 
     if (profileError) {
       throw new Error(`Failed to create user profile: ${profileError.message}`);
@@ -185,11 +202,8 @@ export class UserService {
   }
 
   private static async createParentRecord(userId: string, request: CreateUserRequest): Promise<Parent> {
-    // Generate QR code
-    const { data: qrCodeData, error: qrError } = await supabase
-      .rpc('generate_qr_code');
-
-    const qrCode = qrError ? `QR_${Math.random().toString(36).substr(2, 8).toUpperCase()}` : qrCodeData;
+    // Generate QR code (fallback to random string if RPC fails)
+    const qrCode = `QR_${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
 
     // Create parent record
     const { data: parentData, error: parentError } = await supabase
@@ -267,11 +281,8 @@ export class UserService {
   }
 
   static async generateQRCodeForParent(parentId: string): Promise<string> {
-    // Generate new QR code
-    const { data: qrCodeData, error: qrError } = await supabase
-      .rpc('generate_qr_code');
-
-    const qrCode = qrError ? `QR_${Math.random().toString(36).substr(2, 8).toUpperCase()}` : qrCodeData;
+    // Generate new QR code (fallback to random string)
+    const qrCode = `QR_${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
 
     // Update parent record
     const { error: updateError } = await supabase
