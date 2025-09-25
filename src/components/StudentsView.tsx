@@ -81,6 +81,15 @@ export default function StudentsView() {
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to delete student');
     }
+    if (!confirm('Are you sure you want to delete this student? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await deleteStudent(id);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete student');
+    }
   };
 
   const resetForm = () => {
@@ -749,7 +758,6 @@ export default function StudentsView() {
                   <span>Edit</span>
                 </button>
                 <button
-                  onClick={() => onDeleteStudent(student.id)}
                   onClick={() => handleDelete(student.id)}
                   className="bg-red-500 text-white font-medium py-2 px-3 rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center"
                 >
