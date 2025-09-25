@@ -7,6 +7,7 @@ import AttendanceView from './components/AttendanceView';
 import StudentsView from './components/StudentsView';
 import SessionsView from './components/SessionsView';
 import IDCardView from './components/IDCardView';
+import IDManagementView from './components/IDManagementView';
 import UserManagementView from './components/UserManagementView';
 import { useStudents } from './hooks/useStudents';
 import { useSessions } from './hooks/useSessions';
@@ -52,6 +53,8 @@ function App() {
         return <UserManagementView />;
       case 'id-cards':
         return <IDCardView />;
+      case 'id-management':
+        return <IDManagementView />;
       default:
         return <Dashboard attendanceRecords={attendanceRecords} students={students} sessions={sessions} />;
     }

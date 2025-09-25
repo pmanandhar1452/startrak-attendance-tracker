@@ -111,8 +111,37 @@ export interface StudentQRCode {
 export interface IDCardTemplate {
   studentId: string;
   studentName: string;
-  studentId: string;
+  studentIdNumber: string;
   qrCode: string;
   qrCodeUrl: string;
   cardUrl?: string;
+}
+
+export interface GeneratedID {
+  id: string;
+  studentId: string;
+  studentName?: string;
+  studentIdNumber?: string;
+  idType: 'student_card' | 'qr_code' | 'access_card' | 'library_card';
+  idValue: string;
+  metadata: {
+    qr_code_url?: string;
+    card_url?: string;
+    is_active?: boolean;
+    [key: string]: any;
+  };
+  status: 'active' | 'inactive' | 'expired' | 'revoked';
+  generatedBy?: string;
+  generatedAt: string;
+  expiresAt?: string;
+  lastUsedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IDStatistics {
+  totalIds: number;
+  activeIds: number;
+  expiredIds: number;
+  byType: Record<string, number>;
 }

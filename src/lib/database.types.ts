@@ -306,6 +306,50 @@ export interface Database {
           updated_at?: string | null
         }
       }
+      generated_ids: {
+        Row: {
+          id: string
+          student_id: string
+          id_type: 'student_card' | 'qr_code' | 'access_card' | 'library_card'
+          id_value: string
+          metadata: Json
+          status: 'active' | 'inactive' | 'expired' | 'revoked'
+          generated_by: string | null
+          generated_at: string
+          expires_at: string | null
+          last_used_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          id_type: 'student_card' | 'qr_code' | 'access_card' | 'library_card'
+          id_value: string
+          metadata?: Json
+          status?: 'active' | 'inactive' | 'expired' | 'revoked'
+          generated_by?: string | null
+          generated_at?: string
+          expires_at?: string | null
+          last_used_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          id_type?: 'student_card' | 'qr_code' | 'access_card' | 'library_card'
+          id_value?: string
+          metadata?: Json
+          status?: 'active' | 'inactive' | 'expired' | 'revoked'
+          generated_by?: string | null
+          generated_at?: string
+          expires_at?: string | null
+          last_used_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -320,6 +364,14 @@ export interface Database {
           p_exclude_id?: string
         }
         Returns: boolean
+      }
+      get_id_statistics: {
+        Args: {}
+        Returns: Json
+      }
+      cleanup_expired_ids: {
+        Args: {}
+        Returns: number
       }
     }
     Enums: {

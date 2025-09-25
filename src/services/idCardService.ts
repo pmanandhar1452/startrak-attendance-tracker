@@ -243,7 +243,7 @@ export class IDCardService {
     const template: IDCardTemplate = {
       studentId: student.id,
       studentName: student.name,
-      studentId: student.studentId,
+      studentIdNumber: student.studentId,
       qrCode: qrCode.qrCode,
       qrCodeUrl: qrCode.qrCodeUrl || ''
     };
@@ -252,6 +252,23 @@ export class IDCardService {
     const cardUrl = await this.generateIDCardImage(template);
     template.cardUrl = cardUrl;
 
+    // Store in ID management system
+    try {
+      const { IDManagementService } = await import('./idManagementService');
+      await IDManagementService.createGeneratedID(
+        student.id,
+        'student_card',
+        `CARD_${student.studentId}_${Date.now()}`,
+        {
+          card_url: cardUrl,
+          qr_code_url: qrCode.qrCodeUrl,
+          student_name: student.name,
+          student_id: student.studentId
+        }
+      );
+    } catch (error) {
+      console.warn('Failed to store ID in management system:', error);
+    }
     return template;
   }
 
