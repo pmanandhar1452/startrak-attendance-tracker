@@ -6,91 +6,9 @@ type StudentQRCodeRow = Database['public']['Tables']['student_qr_codes']['Row'];
 type StudentQRCodeInsert = Database['public']['Tables']['student_qr_codes']['Insert'];
 
 export class IDCardService {
-  // Initialize storage buckets with proper error handling
-  static async initializeStorage(): Promise<void> {
-    try {
-      // Check if buckets exist first
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const existingBuckets = buckets?.map(b => b.name) || [];
-
-      // Create QR codes bucket if it doesn't exist
-      if (!existingBuckets.includes('qr-codes')) {
-        const { error: qrBucketError } = await supabase.storage.createBucket('qr-codes', {
-          public: true,
-          allowedMimeTypes: ['image/png', 'image/jpeg'],
-          fileSizeLimit: 1024 * 1024 // 1MB
-        });
-
-        if (qrBucketError) {
-          console.warn('Failed to create qr-codes bucket:', qrBucketError.message);
-        }
-      }
-
-      // Create ID cards bucket if it doesn't exist
-      if (!existingBuckets.includes('id-cards')) {
-        const { error: cardsBucketError } = await supabase.storage.createBucket('id-cards', {
-          public: true,
-          allowedMimeTypes: ['image/png', 'image/jpeg', 'application/pdf'],
-          fileSizeLimit: 5 * 1024 * 1024 // 5MB
-        });
-
-        if (cardsBucketError) {
-          console.warn('Failed to create id-cards bucket:', cardsBucketError.message);
-        }
-      }
-
-      // Set up bucket policies for public access
-      await this.setupBucketPolicies();
-    } catch (error) {
-      console.warn('Storage initialization error:', error);
-    }
-  }
-
-  // Setup bucket policies for public access
-  private static async setupBucketPolicies(): Promise<void> {
-    try {
-      // Note: In a real Supabase project, you would set up RLS policies
-      // For demo purposes, we'll rely on the public bucket setting
-      console.log('Storage buckets initialized with public access');
-    } catch (error) {
-      console.warn('Failed to setup bucket policies:', error);
-    }
-  }
-
-  // Fallback method to create buckets during operation
-  private static async ensureBucketExists(bucketName: string): Promise<void> {
-    try {
-      // Try to get bucket info
-      const { data, error } = await supabase.storage.getBucket(bucketName);
-      
-      if (error && error.message.includes('not found')) {
-        // Bucket doesn't exist, create it
-        const bucketConfig = bucketName === 'qr-codes' ? {
-          public: true,
-          allowedMimeTypes: ['image/png', 'image/jpeg'],
-          fileSizeLimit: 1024 * 1024
-        } : {
-          public: true,
-          allowedMimeTypes: ['image/png', 'image/jpeg', 'application/pdf'],
-          fileSizeLimit: 5 * 1024 * 1024
-        };
-
-        const { error: createError } = await supabase.storage.createBucket(bucketName, bucketConfig);
-        if (createError) {
-          console.warn(`Failed to create ${bucketName} bucket:`, createError.message);
-        }
-      }
-    } catch (error) {
-      console.warn(`Error ensuring ${bucketName} bucket exists:`, error);
-    }
-  }
-
-  // Enhanced QR code image generation with bucket creation
+  // QR code image generation
   static async generateQRCodeImage(qrCode: string): Promise<string> {
     try {
-      // Ensure bucket exists
-      await this.ensureBucketExists('qr-codes');
-
       // Generate QR code using external API
       const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&format=png&data=${encodeURIComponent(qrCode)}`;
       
@@ -128,12 +46,9 @@ export class IDCardService {
     }
   }
 
-  // Enhanced ID card image generation with bucket creation
+  // ID card image generation
   static async generateIDCardImage(template: IDCardTemplate): Promise<string> {
     try {
-      // Ensure bucket exists
-      await this.ensureBucketExists('id-cards');
-
       // Create canvas for ID card
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');

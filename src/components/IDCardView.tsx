@@ -35,11 +35,6 @@ export default function IDCardView() {
     setSuccessMessage(null);
 
     try {
-      // Initialize storage before generating
-      await import('../services/idCardService').then(module => 
-        module.IDCardService.initializeStorage()
-      );
-      
       const template = await generateIDCard(student);
       setGeneratedCards(prev => [...prev.filter(c => c.studentId !== student.id), template]);
       setSuccessMessage(`ID card generated for ${student.name}`);
@@ -63,11 +58,6 @@ export default function IDCardView() {
     setSuccessMessage(null);
 
     try {
-      // Initialize storage before batch generation
-      await import('../services/idCardService').then(module => 
-        module.IDCardService.initializeStorage()
-      );
-      
       const selectedStudentObjects = students.filter(s => selectedStudents.includes(s.id));
       const templates = await batchGenerateIDCards(selectedStudentObjects);
       
