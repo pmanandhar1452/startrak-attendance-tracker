@@ -85,7 +85,6 @@ export interface Parent {
   userProfile?: UserProfile;
   qrCode?: string;
   qrCodeUrl?: string;
-  emergencyContact?: string;
   linkedStudents: Student[];
   createdAt: string;
   updatedAt: string;
@@ -97,6 +96,4 @@ export interface CreateUserRequest {
   fullName: string;
   role: 'admin' | 'parent' | 'instructor';
   linkedStudentIds?: string[];
-  phone?: string;
-  emergencyContact?: string;
 }
