@@ -223,11 +223,7 @@ export class UserService {
     if (request.linkedStudentIds && request.linkedStudentIds.length > 0) {
       const linkInserts = request.linkedStudentIds.map(studentId => ({
         student_id: studentId,
-        parent_id: parentData.id,
-        relationship_type: 'parent',
-        is_primary: true
-      }));
-
+        parent_id: parentData.id
       const { error: linkError } = await supabase
         .from('student_parent_link')
         .insert(linkInserts);
@@ -261,11 +257,9 @@ export class UserService {
 
     // Add new links
     if (studentIds.length > 0) {
-      const linkInserts = studentIds.map((studentId, index) => ({
+      const linkInserts = studentIds.map(studentId => ({
         student_id: studentId,
-        parent_id: parentId,
-        relationship_type: 'parent',
-        is_primary: index === 0 // First student is primary
+        parent_id: parentId
       }));
 
       const { error: insertError } = await supabase
