@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Mail, Key, QrCode, Link, Plus, Trash2, Send, AlertCircle, CheckCircle, UserPlus, Shield, X, CreditCard as Edit } from 'lucide-react'rt { CreateUserRequest, Parent, Student } from '../types';
+import { Users, Mail, Key, QrCode, Link, Plus, Trash2, Send, AlertCircle, CheckCircle, UserPlus, Shield, X, CreditCard as Edit } from 'lucide-react';
+import { CreateUserRequest, Parent, Student } from '../types';
 import { useUsers } from '../hooks/useUsers';
 import { useStudents } from '../hooks/useStudents';
 import { EmailService } from '../services/emailService';
