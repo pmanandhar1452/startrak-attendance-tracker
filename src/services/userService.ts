@@ -447,12 +447,19 @@ export class UserService {
     newValues?: Record<string, any>
   ): Promise<void> {
     try {
-      const { error } = await supabase.rpc('create_audit_log', {
-        p_table_name: tableName,
-        p_record_id: recordId,
-        p_action: action,
-        p_old_values: oldValues || null,
-        p_new_values: newValues || null
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { error } = await supabase
+        .from('audit_logs')
+        .insert({
+          table_name: tableName,
+          record_id: recordId,
+          action: action,
+          old_values: oldValues || null,
+          new_values: newValues || null,
+          changed_by: user?.id || null,
+          ip_address: null, // Will be populated by database trigger if available
+          user_agent: navigator.userAgent || null
       });
 
       if (error) {
