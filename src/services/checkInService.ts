@@ -11,6 +11,17 @@ export interface CheckInResult {
   attendanceRecord?: AttendanceRecord;
 }
 
+export interface CheckOutResult {
+  success: boolean;
+  studentName: string;
+  studentId: string;
+  parentName: string;
+  checkOutTime: string;
+  status: 'success' | 'error' | 'not-authorized' | 'not-checked-in';
+  message: string;
+  attendanceRecord?: AttendanceRecord;
+}
+
 export class CheckInService {
   // Process QR code check-in
   static async processQRCheckIn(qrCode: string): Promise<CheckInResult> {
@@ -178,11 +189,186 @@ export class CheckInService {
     }
   }
 
+  // Process parent QR code for student check-out
+  static async processParentCheckOut(parentQrCode: string, studentId: string): Promise<CheckOutResult> {
+    try {
+      // Validate parent QR code and get parent info
+      const { data: parentData, error: parentError } = await supabase
+        .from('parents')
+        .select(`
+          id,
+          qr_code,
+          user_profiles (
+            full_name
+          ),
+          student_parent_link (
+            student_id,
+            students (
+              id,
+              name,
+              student_id,
+              status
+            )
+          )
+        `)
+        .eq('qr_code', parentQrCode)
+        .single();
+
+      if (parentError || !parentData) {
+        return {
+          success: false,
+          studentName: '',
+          studentId: '',
+          parentName: '',
+          checkOutTime: '',
+          status: 'error',
+          message: 'Invalid parent QR code'
+        };
+      }
+
+      // Check if parent is authorized for this student
+      const authorizedStudent = parentData.student_parent_link?.find(
+        (link: any) => link.student_id === studentId
+      );
+
+      if (!authorizedStudent) {
+        return {
+          success: false,
+          studentName: '',
+          studentId: '',
+          parentName: parentData.user_profiles?.full_name || 'Unknown Parent',
+          checkOutTime: '',
+          status: 'not-authorized',
+          message: 'You are not authorized to check out this student'
+        };
+      }
+
+      const student = authorizedStudent.students;
+      if (!student || student.status !== 'active') {
+        return {
+          success: false,
+          studentName: student?.name || '',
+          studentId: student?.student_id || '',
+          parentName: parentData.user_profiles?.full_name || 'Unknown Parent',
+          checkOutTime: '',
+          status: 'error',
+          message: 'Student account is not active'
+        };
+      }
+
+      // Get current active session
+      const { data: activeSession, error: sessionError } = await supabase
+        .from('sessions')
+        .select('id, name')
+        .eq('status', 'active')
+        .single();
+
+      if (sessionError || !activeSession) {
+        return {
+          success: false,
+          studentName: student.name,
+          studentId: student.student_id,
+          parentName: parentData.user_profiles?.full_name || 'Unknown Parent',
+          checkOutTime: '',
+          status: 'error',
+          message: 'No active session found'
+        };
+      }
+
+      // Check if student is currently checked in
+      const { data: attendanceRecord, error: recordError } = await supabase
+        .from('attendance_records')
+        .select('*')
+        .eq('student_id', studentId)
+        .eq('session_id', activeSession.id)
+        .single();
+
+      if (recordError || !attendanceRecord) {
+        return {
+          success: false,
+          studentName: student.name,
+          studentId: student.student_id,
+          parentName: parentData.user_profiles?.full_name || 'Unknown Parent',
+          checkOutTime: '',
+          status: 'not-checked-in',
+          message: 'Student is not currently checked in'
+        };
+      }
+
+      if (attendanceRecord.status === 'completed') {
+        return {
+          success: false,
+          studentName: student.name,
+          studentId: student.student_id,
+          parentName: parentData.user_profiles?.full_name || 'Unknown Parent',
+          checkOutTime: attendanceRecord.check_out_time ? 
+            new Date(attendanceRecord.check_out_time).toLocaleTimeString() : '',
+          status: 'error',
+          message: 'Student has already been checked out'
+        };
+      }
+
+      // Update attendance record with check-out time
+      const now = new Date();
+      const { data: updatedRecord, error: updateError } = await supabase
+        .from('attendance_records')
+        .update({
+          check_out_time: now.toISOString(),
+          status: 'completed',
+          notes: `Checked out by parent: ${parentData.user_profiles?.full_name}`
+        })
+        .eq('id', attendanceRecord.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        return {
+          success: false,
+          studentName: student.name,
+          studentId: student.student_id,
+          parentName: parentData.user_profiles?.full_name || 'Unknown Parent',
+          checkOutTime: '',
+          status: 'error',
+          message: 'Failed to update attendance record'
+        };
+      }
+
+      return {
+        success: true,
+        studentName: student.name,
+        studentId: student.student_id,
+        parentName: parentData.user_profiles?.full_name || 'Unknown Parent',
+        checkOutTime: now.toLocaleTimeString(),
+        status: 'success',
+        message: 'Student successfully checked out!',
+        attendanceRecord: this.mapAttendanceFromDB(updatedRecord)
+      };
+
+    } catch (error) {
+      console.error('Parent check-out error:', error);
+      return {
+        success: false,
+        studentName: '',
+        studentId: '',
+        parentName: '',
+        checkOutTime: '',
+        status: 'error',
+        message: 'An unexpected error occurred'
+      };
+    }
+  }
+
   // Validate QR code format and extract student ID
   static extractStudentIdFromQR(qrCode: string): string | null {
     // Expected format: STU_{studentId}_{timestamp}
     const match = qrCode.match(/^STU_([a-f0-9-]+)_\d+$/);
     return match ? match[1] : null;
+  }
+
+  // Validate parent QR code format
+  static isParentQRCode(qrCode: string): boolean {
+    // Parent QR codes have format: QR_XXXXXXXX
+    return /^QR_[A-Z0-9]{8}$/.test(qrCode);
   }
 
   // Subscribe to real-time attendance updates

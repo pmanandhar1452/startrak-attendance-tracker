@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, QrCode, CheckCircle, XCircle, AlertCircle, User, Clock, RefreshCw } from 'lucide-react';
+import { Camera, QrCode, CheckCircle, XCircle, AlertCircle, User, Clock, RefreshCw, Users } from 'lucide-react';
 import jsQR from 'jsqr';
-import { CheckInService } from '../services/checkInService';
+import { CheckInService, CheckOutResult } from '../services/checkInService';
+import { useStudents } from '../hooks/useStudents';
 
 interface QRScannerViewProps {
   onScanSuccess?: (studentId: string) => void;
@@ -13,9 +14,12 @@ interface ScanResult {
   checkInTime: string;
   status: 'success' | 'error' | 'already-checked-in';
   message: string;
+  isParentCheckOut?: boolean;
+  parentName?: string;
 }
 
 export default function QRScannerView({ onScanSuccess }: QRScannerViewProps) {
+  const { students } = useStudents();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -23,6 +27,8 @@ export default function QRScannerView({ onScanSuccess }: QRScannerViewProps) {
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showStudentSelection, setShowStudentSelection] = useState(false);
+  const [parentQrCode, setParentQrCode] = useState<string | null>(null);
   const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize camera
@@ -128,26 +134,73 @@ export default function QRScannerView({ onScanSuccess }: QRScannerViewProps) {
     setError(null);
 
     try {
-      // Call check-in API with full QR data
-      const apiResult = await CheckInService.processQRCheckIn(qrData);
+      // Check if this is a parent QR code
+      if (CheckInService.isParentQRCode(qrData)) {
+        // This is a parent QR code - show student selection
+        setParentQrCode(qrData);
+        setShowStudentSelection(true);
+        stopCamera();
+      } else {
+        // This is a student QR code - process check-in
+        const apiResult = await CheckInService.processQRCheckIn(qrData);
+        
+        const result: ScanResult = {
+          studentName: apiResult.studentName,
+          studentId: apiResult.studentId,
+          checkInTime: apiResult.checkInTime,
+          status: apiResult.status,
+          message: apiResult.message
+        };
+        
+        setScanResult(result);
+        
+        if (result.status === 'success') {
+          const studentId = CheckInService.extractStudentIdFromQR(qrData);
+          if (studentId) {
+            onScanSuccess?.(studentId);
+          }
+          // Stop scanning after successful check-in
+          stopCamera();
+          
+          // Auto-clear result after 5 seconds
+          setTimeout(() => {
+            setScanResult(null);
+          }, 5000);
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to process QR code');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Handle student selection for parent check-out
+  const handleStudentCheckOut = async (studentId: string) => {
+    if (!parentQrCode) return;
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      const checkOutResult = await CheckInService.processParentCheckOut(parentQrCode, studentId);
       
       const result: ScanResult = {
-        studentName: apiResult.studentName,
-        studentId: apiResult.studentId,
-        checkInTime: apiResult.checkInTime,
-        status: apiResult.status,
-        message: apiResult.message
+        studentName: checkOutResult.studentName,
+        studentId: checkOutResult.studentId,
+        checkInTime: checkOutResult.checkOutTime,
+        status: checkOutResult.status as any,
+        message: checkOutResult.message,
+        isParentCheckOut: true,
+        parentName: checkOutResult.parentName
       };
       
       setScanResult(result);
+      setShowStudentSelection(false);
+      setParentQrCode(null);
       
       if (result.status === 'success') {
-        const studentId = CheckInService.extractStudentIdFromQR(qrData);
-        if (studentId) {
-          onScanSuccess?.(studentId);
-        }
-        // Stop scanning after successful check-in
-        stopCamera();
+        onScanSuccess?.(studentId);
         
         // Auto-clear result after 5 seconds
         setTimeout(() => {
@@ -155,7 +208,7 @@ export default function QRScannerView({ onScanSuccess }: QRScannerViewProps) {
         }, 5000);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to process QR code');
+      setError(err instanceof Error ? err.message : 'Failed to process check-out');
     } finally {
       setIsProcessing(false);
     }
@@ -166,6 +219,8 @@ export default function QRScannerView({ onScanSuccess }: QRScannerViewProps) {
     setScanResult(null);
     setError(null);
     setIsProcessing(false);
+    setShowStudentSelection(false);
+    setParentQrCode(null);
     if (!isScanning) {
       startCamera();
     }
@@ -184,6 +239,10 @@ export default function QRScannerView({ onScanSuccess }: QRScannerViewProps) {
         return <CheckCircle className="h-16 w-16 text-green-600" />;
       case 'already-checked-in':
         return <Clock className="h-16 w-16 text-amber-600" />;
+      case 'not-authorized':
+        return <XCircle className="h-16 w-16 text-red-600" />;
+      case 'not-checked-in':
+        return <AlertCircle className="h-16 w-16 text-orange-600" />;
       case 'error':
         return <XCircle className="h-16 w-16 text-red-600" />;
       default:
@@ -197,6 +256,10 @@ export default function QRScannerView({ onScanSuccess }: QRScannerViewProps) {
         return 'bg-green-50 border-green-200';
       case 'already-checked-in':
         return 'bg-amber-50 border-amber-200';
+      case 'not-authorized':
+        return 'bg-red-50 border-red-200';
+      case 'not-checked-in':
+        return 'bg-orange-50 border-orange-200';
       case 'error':
         return 'bg-red-50 border-red-200';
       default:
@@ -226,7 +289,7 @@ export default function QRScannerView({ onScanSuccess }: QRScannerViewProps) {
             </div>
             
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              {scanResult.status === 'success' ? 'Welcome!' : 
+              {scanResult.status === 'success' ? (scanResult.isParentCheckOut ? 'Check-out Complete!' : 'Welcome!') : 
                scanResult.status === 'already-checked-in' ? 'Already Checked In' : 'Error'}
             </h2>
             
@@ -239,9 +302,17 @@ export default function QRScannerView({ onScanSuccess }: QRScannerViewProps) {
                 <div className="flex items-center justify-center space-x-2">
                   <span className="text-sm text-gray-600">Student ID: {scanResult.studentId}</span>
                 </div>
+                {scanResult.isParentCheckOut && scanResult.parentName && (
+                  <div className="flex items-center justify-center space-x-2">
+                    <Users className="h-4 w-4 text-gray-600" />
+                    <span className="text-sm text-gray-600">Checked out by: {scanResult.parentName}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-center space-x-2">
                   <Clock className="h-4 w-4 text-gray-600" />
-                  <span className="text-sm text-gray-600">Time: {scanResult.checkInTime}</span>
+                  <span className="text-sm text-gray-600">
+                    {scanResult.isParentCheckOut ? 'Check-out' : 'Check-in'} Time: {scanResult.checkInTime}
+                  </span>
                 </div>
               </div>
             )}
