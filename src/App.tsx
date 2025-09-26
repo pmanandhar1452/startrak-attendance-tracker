@@ -9,6 +9,7 @@ import SessionsView from './components/SessionsView';
 import IDCardView from './components/IDCardView';
 import IDManagementView from './components/IDManagementView';
 import UserManagementView from './components/UserManagementView';
+import QRScannerPage from './components/QRScannerPage';
 import { useStudents } from './hooks/useStudents';
 import { useSessions } from './hooks/useSessions';
 import { useAttendance } from './hooks/useAttendance';
@@ -55,6 +56,8 @@ function App() {
         return <IDCardView />;
       case 'id-management':
         return <IDManagementView />;
+      case 'qr-scanner':
+        return <QRScannerPage onBack={() => setActiveView('dashboard')} />;
       default:
         return <Dashboard attendanceRecords={attendanceRecords} students={students} sessions={sessions} />;
     }
