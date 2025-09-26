@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Mail, Key, QrCode, Link, Plus, Trash2, Send, AlertCircle, CheckCircle, UserPlus, Shield, X, CreditCard as Edit } from 'lucide-react';
+import { Users, Mail, Key, QrCode, Link, Plus, Trash2, Send, AlertCircle, CheckCircle, UserPlus, Shield, X, CreditCard as Edit, Search } from 'lucide-react';
 import { CreateUserRequest, Parent, Student } from '../types';
 import { useUsers } from '../hooks/useUsers';
 import { useStudents } from '../hooks/useStudents';
@@ -17,6 +17,7 @@ export default function UserManagementView() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -40,6 +41,21 @@ export default function UserManagementView() {
 
   // Confirmation modal state
   const [showConfirmation, setShowConfirmation] = useState(false);
+
+  // Filter parents based on search term
+  const filteredParents = parents.filter(parent => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      parent.userProfile?.fullName?.toLowerCase().includes(searchLower) ||
+      parent.id.toLowerCase().includes(searchLower) ||
+      parent.qrCode?.toLowerCase().includes(searchLower) ||
+      parent.linkedStudents.some(student => 
+        student.name.toLowerCase().includes(searchLower) ||
+        student.studentId.toLowerCase().includes(searchLower)
+      )
+    );
+  });
+
   // Calculate pagination values
   const totalPages = pageSize === -1 ? 1 : Math.ceil(totalCount / pageSize);
   const startRecord = pageSize === -1 ? 1 : (currentPage - 1) * pageSize + 1;
@@ -418,7 +434,18 @@ export default function UserManagementView() {
           <h2 className="text-lg font-semibold text-gray-900">List of Users</h2>
           <div className="flex items-center space-x-4">
             <div className="text-sm text-gray-500">
-              {totalCount} {totalCount === 1 ? 'user' : 'users'} total
+              {filteredParents.length} of {totalCount} {totalCount === 1 ? 'user' : 'users'}
+              {searchTerm && ` matching "${searchTerm}"`}
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search users..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-64"
+              />
             </div>
             <div className="flex items-center space-x-2">
               <label className="text-sm font-medium text-gray-700">Show:</label>
@@ -437,11 +464,15 @@ export default function UserManagementView() {
           </div>
         </div>
         
-        {parents.length === 0 ? (
+        {filteredParents.length === 0 ? (
           <div className="text-center py-8">
             <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Parents Found</h3>
-            <p className="text-gray-500">Start by creating parent accounts</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {searchTerm ? 'No Users Found' : 'No Parents Found'}
+            </h3>
+            <p className="text-gray-500">
+              {searchTerm ? 'Try adjusting your search terms' : 'Start by creating parent accounts'}
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -469,7 +500,7 @@ export default function UserManagementView() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {parents.map((parent) => (
+                {filteredParents.map((parent) => (
                   <tr key={parent.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
