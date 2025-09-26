@@ -538,6 +538,20 @@ export default function UserManagementView() {
                       <div className="flex items-center justify-end space-x-2">
                         <button
                           onClick={() => {
+                            setEditingUser(parent);
+                            setEditFormData({
+                              fullName: parent.userProfile?.fullName || '',
+                              roleId: parent.userProfile?.roleId || '',
+                              linkedStudentIds: parent.linkedStudents.map(s => s.id)
+                            });
+                          }}
+                          className="text-purple-600 hover:text-purple-900 p-1 rounded hover:bg-purple-50"
+                          title="Edit User"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => {
                             setShowLinkForm(parent);
                             setLinkFormData(parent.linkedStudents.map(s => s.id));
                           }}
