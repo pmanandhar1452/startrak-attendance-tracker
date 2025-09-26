@@ -433,10 +433,6 @@ export default function UserManagementView() {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-900">List of Users</h2>
           <div className="flex items-center space-x-4">
-            <div className="text-sm text-gray-500">
-              {filteredParents.length} of {totalCount} {totalCount === 1 ? 'user' : 'users'}
-              {searchTerm && ` matching "${searchTerm}"`}
-            </div>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
@@ -624,6 +620,14 @@ export default function UserManagementView() {
             </table>
           </div>
         )}
+        
+        {/* User Count Display */}
+        <div className="mt-4 flex justify-end">
+          <div className="text-sm text-gray-500">
+            {filteredParents.length} of {totalCount} {totalCount === 1 ? 'user' : 'users'}
+            {searchTerm && ` matching "${searchTerm}"`}
+          </div>
+        </div>
         
         {/* Pagination Controls */}
         {pageSize !== -1 && totalPages > 1 && (
