@@ -12,6 +12,7 @@ export default function UserManagementView() {
   const { students } = useStudents();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showLinkForm, setShowLinkForm] = useState<Parent | null>(null);
+  const [editingUser, setEditingUser] = useState<Parent | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
