@@ -9,6 +9,7 @@ import MultiSelectDropdown from './MultiSelectDropdown';
 
 export default function UserManagementView() {
   const { parents, roles, totalCount, loading, error, createUser, linkParentToStudents, generateQRCode, deleteUser, fetchData } = useUsers();
+  const { updateUser } = useUsers();
   const { students } = useStudents();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showLinkForm, setShowLinkForm] = useState<Parent | null>(null);
@@ -37,6 +38,8 @@ export default function UserManagementView() {
     linkedStudentIds: [] as string[]
   });
 
+  // Confirmation modal state
+  const [showConfirmation, setShowConfirmation] = useState(false);
   // Calculate pagination values
   const totalPages = pageSize === -1 ? 1 : Math.ceil(totalCount / pageSize);
   const startRecord = pageSize === -1 ? 1 : (currentPage - 1) * pageSize + 1;
