@@ -145,3 +145,23 @@ export interface IDStatistics {
   expiredIds: number;
   byType: Record<string, number>;
 }
+
+export interface AuditLog {
+  id: string;
+  tableName: string;
+  recordId: string;
+  action: 'INSERT' | 'UPDATE' | 'DELETE';
+  oldValues?: Record<string, any>;
+  newValues?: Record<string, any>;
+  changedBy?: string;
+  changedAt: string;
+  ipAddress?: string;
+  userAgent?: string;
+  createdAt: string;
+}
+
+export interface EditUserRequest {
+  fullName?: string;
+  roleId?: string;
+  linkedStudentIds?: string[];
+}

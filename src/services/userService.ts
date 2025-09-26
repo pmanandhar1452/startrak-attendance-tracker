@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { UserProfile, Role, Parent, CreateUserRequest, Student } from '../types';
+import { UserProfile, Role, Parent, CreateUserRequest, Student, EditUserRequest, AuditLog } from '../types';
 import { Database } from '../lib/database.types';
 
 type UserProfileRow = Database['public']['Tables']['user_profiles']['Row'];
@@ -347,6 +347,169 @@ export class UserService {
     } catch (authError) {
       console.warn('Failed to delete auth user (expected in demo mode):', authError);
     }
+  }
+
+  static async updateUserProfile(userId: string, updates: EditUserRequest): Promise<Parent> {
+    try {
+      // First, get the current user data for audit logging
+      const { data: currentUser, error: fetchError } = await supabase
+        .from('user_profiles')
+        .select(`
+          *,
+          roles (*)
+        `)
+        .eq('id', userId)
+        .single();
+
+      if (fetchError) {
+        throw new Error(`Failed to fetch current user data: ${fetchError.message}`);
+      }
+
+      // Get current parent data
+      const { data: currentParent, error: parentFetchError } = await supabase
+        .from('parents')
+        .select(`
+          *,
+          student_parent_link (
+            student_id,
+            students (*)
+          )
+        `)
+        .eq('user_id', userId)
+        .single();
+
+      if (parentFetchError) {
+        throw new Error(`Failed to fetch current parent data: ${parentFetchError.message}`);
+      }
+
+      const oldValues = {
+        fullName: currentUser.full_name,
+        roleId: currentUser.role_id,
+        linkedStudentIds: currentParent.student_parent_link?.map((link: any) => link.student_id) || []
+      };
+
+      // Update user profile
+      const profileUpdates: any = {};
+      if (updates.fullName !== undefined) profileUpdates.full_name = updates.fullName;
+      if (updates.roleId !== undefined) profileUpdates.role_id = updates.roleId;
+
+      if (Object.keys(profileUpdates).length > 0) {
+        const { error: updateError } = await supabase
+          .from('user_profiles')
+          .update(profileUpdates)
+          .eq('id', userId);
+
+        if (updateError) {
+          throw new Error(`Failed to update user profile: ${updateError.message}`);
+        }
+      }
+
+      // Update student links if provided
+      if (updates.linkedStudentIds !== undefined && currentParent) {
+        await this.linkParentToStudents(currentParent.id, updates.linkedStudentIds);
+      }
+
+      // Create audit log
+      const newValues = {
+        fullName: updates.fullName ?? oldValues.fullName,
+        roleId: updates.roleId ?? oldValues.roleId,
+        linkedStudentIds: updates.linkedStudentIds ?? oldValues.linkedStudentIds
+      };
+
+      await this.createAuditLog(
+        'user_profiles',
+        userId,
+        'UPDATE',
+        oldValues,
+        newValues
+      );
+
+      // Return updated parent data
+      const parentList = await this.getAllParents(1, 1000);
+      const updatedParent = parentList.data.find(p => p.userId === userId);
+      
+      if (!updatedParent) {
+        throw new Error('Failed to retrieve updated parent data');
+      }
+
+      return updatedParent;
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      throw error;
+    }
+  }
+
+  static async createAuditLog(
+    tableName: string,
+    recordId: string,
+    action: 'INSERT' | 'UPDATE' | 'DELETE',
+    oldValues?: Record<string, any>,
+    newValues?: Record<string, any>
+  ): Promise<void> {
+    try {
+      const { error } = await supabase.rpc('create_audit_log', {
+        p_table_name: tableName,
+        p_record_id: recordId,
+        p_action: action,
+        p_old_values: oldValues || null,
+        p_new_values: newValues || null
+      });
+
+      if (error) {
+        console.warn('Failed to create audit log:', error.message);
+      }
+    } catch (error) {
+      console.warn('Audit logging error:', error);
+    }
+  }
+
+  static async getAuditLogs(limit = 100, offset = 0): Promise<{ data: AuditLog[]; count: number }> {
+    const { data, error, count } = await supabase
+      .from('audit_logs')
+      .select('*', { count: 'exact' })
+      .order('changed_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      throw new Error(`Failed to fetch audit logs: ${error.message}`);
+    }
+
+    return {
+      data: (data || []).map(this.mapAuditLogFromDB),
+      count: count || 0
+    };
+  }
+
+  static async checkAdminPermission(): Promise<boolean> {
+    try {
+      const { data, error } = await supabase.rpc('is_admin');
+      
+      if (error) {
+        console.warn('Failed to check admin permission:', error.message);
+        return false;
+      }
+
+      return data || false;
+    } catch (error) {
+      console.warn('Admin permission check error:', error);
+      return false;
+    }
+  }
+
+  private static mapAuditLogFromDB(log: any): AuditLog {
+    return {
+      id: log.id,
+      tableName: log.table_name,
+      recordId: log.record_id,
+      action: log.action,
+      oldValues: log.old_values,
+      newValues: log.new_values,
+      changedBy: log.changed_by,
+      changedAt: log.changed_at,
+      ipAddress: log.ip_address,
+      userAgent: log.user_agent,
+      createdAt: log.created_at
+    };
   }
 
   private static mapRoleFromDB(role: RoleRow): Role {

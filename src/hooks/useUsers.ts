@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { UserProfile, Role, Parent, CreateUserRequest } from '../types';
+import { UserProfile, Role, Parent, CreateUserRequest, EditUserRequest } from '../types';
 import { UserService } from '../services/userService';
 import { QRService } from '../services/qrService';
 
@@ -9,6 +9,7 @@ export function useUsers() {
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const fetchData = async (page = 1, pageSize = 10) => {
     try {
@@ -17,12 +18,14 @@ export function useUsers() {
       
       const [parentsResult, rolesData] = await Promise.all([
         UserService.getAllParents(page, pageSize),
-        UserService.getAllRoles()
+        UserService.getAllRoles(),
+        UserService.checkAdminPermission()
       ]);
       
       setParents(parentsResult.data);
       setTotalCount(parentsResult.count);
       setRoles(rolesData);
+      setIsAdmin(parentsResult.isAdmin || false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch user data');
       console.error('Error fetching user data:', err);
@@ -86,6 +89,24 @@ export function useUsers() {
     }
   };
 
+  const updateUser = async (userId: string, updates: EditUserRequest) => {
+    try {
+      setError(null);
+      const updatedParent = await UserService.updateUserProfile(userId, updates);
+      
+      // Update the parent in the local state
+      setParents(prev => prev.map(parent => 
+        parent.userId === userId ? updatedParent : parent
+      ));
+      
+      return updatedParent;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update user';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+
   const deleteUser = async (userId: string) => {
     try {
       setError(null);
@@ -106,7 +127,9 @@ export function useUsers() {
     totalCount,
     loading,
     error,
+    isAdmin,
     createUser,
+    updateUser,
     linkParentToStudents,
     generateQRCode,
     deleteUser,
