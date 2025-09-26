@@ -352,7 +352,12 @@ export default function UserManagementView() {
 
       {/* Parents List */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Parents & Caretakers</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-semibold text-gray-900">Parents & Caretakers</h2>
+          <div className="text-sm text-gray-500">
+            {parents.length} {parents.length === 1 ? 'user' : 'users'}
+          </div>
+        </div>
         
         {parents.length === 0 ? (
           <div className="text-center py-8">
@@ -361,81 +366,128 @@ export default function UserManagementView() {
             <p className="text-gray-500">Start by creating parent accounts</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {parents.map((parent) => (
-              <div key={parent.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
-                      <span className="text-white font-semibold">
-                        {parent.userProfile?.fullName?.charAt(0) || 'P'}
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{parent.userProfile?.fullName}</h3>
-                      <p className="text-sm text-gray-500 flex items-center space-x-1">
-                        <Shield className="h-3 w-3" />
-                        <span>{parent.userProfile?.roleName}</span>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2 mb-4">
-                  {parent.qrCode && (
-                    <div className="flex items-center space-x-2 text-sm text-gray-600">
-                      <QrCode className="h-4 w-4" />
-                      <span className="font-mono text-xs">{parent.qrCode}</span>
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <Users className="h-4 w-4" />
-                    <span>{parent.linkedStudents.length} linked students</span>
-                  </div>
-
-                  {parent.linkedStudents.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-xs text-gray-500 mb-1">Linked Students:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {parent.linkedStudents.map((student) => (
-                          <span key={student.id} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                            {student.name}
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    User
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Role
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    QR Code
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Linked Students
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Created
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {parents.map((parent) => (
+                  <tr key={parent.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
+                          <span className="text-white font-semibold text-sm">
+                            {parent.userProfile?.fullName?.charAt(0) || 'P'}
                           </span>
-                        ))}
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {parent.userProfile?.fullName || 'Unknown User'}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            ID: {parent.id.slice(0, 8)}...
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => {
-                      setShowLinkForm(parent);
-                      setLinkFormData(parent.linkedStudents.map(s => s.id));
-                    }}
-                    className="flex-1 bg-blue-500 text-white font-medium py-2 px-3 rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center space-x-1"
-                  >
-                    <Link className="h-4 w-4" />
-                    <span>Link</span>
-                  </button>
-                  <button
-                    onClick={() => handleGenerateQR(parent)}
-                    disabled={isSubmitting}
-                    className="flex-1 bg-green-500 text-white font-medium py-2 px-3 rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center space-x-1 disabled:opacity-50"
-                  >
-                    <QrCode className="h-4 w-4" />
-                    <span>QR</span>
-                  </button>
-                  <button
-                    onClick={() => handleDeleteUser(parent)}
-                    className="bg-red-500 text-white font-medium py-2 px-3 rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-2">
+                        <Shield className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm text-gray-900 capitalize">
+                          {parent.userProfile?.roleName || 'parent'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {parent.qrCode ? (
+                        <div className="flex items-center space-x-2">
+                          <QrCode className="h-4 w-4 text-green-600" />
+                          <span className="text-sm font-mono text-gray-900">
+                            {parent.qrCode}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">No QR code</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center space-x-2">
+                        <Users className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm text-gray-900">
+                          {parent.linkedStudents.length} students
+                        </span>
+                      </div>
+                      {parent.linkedStudents.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {parent.linkedStudents.slice(0, 3).map((student) => (
+                            <span key={student.id} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                              {student.name}
+                            </span>
+                          ))}
+                          {parent.linkedStudents.length > 3 && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                              +{parent.linkedStudents.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(parent.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={() => {
+                            setShowLinkForm(parent);
+                            setLinkFormData(parent.linkedStudents.map(s => s.id));
+                          }}
+                          className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                          title="Link Students"
+                        >
+                          <Link className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleGenerateQR(parent)}
+                          disabled={isSubmitting}
+                          className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50 disabled:opacity-50"
+                          title="Generate QR Code"
+                        >
+                          <QrCode className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(parent)}
+                          className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
+                          title="Delete User"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
