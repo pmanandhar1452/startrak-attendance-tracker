@@ -31,6 +31,12 @@ export default function UserManagementView() {
 
   const [linkFormData, setLinkFormData] = useState<string[]>([]);
 
+  const [editFormData, setEditFormData] = useState({
+    fullName: '',
+    roleId: '',
+    linkedStudentIds: [] as string[]
+  });
+
   // Calculate pagination values
   const totalPages = pageSize === -1 ? 1 : Math.ceil(totalCount / pageSize);
   const startRecord = pageSize === -1 ? 1 : (currentPage - 1) * pageSize + 1;
