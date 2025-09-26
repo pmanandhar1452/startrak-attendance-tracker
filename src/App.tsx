@@ -10,7 +10,6 @@ import ConsolidatedIDManagementView from './components/ConsolidatedIDManagementV
 import UserManagementView from './components/UserManagementView';
 import QRScannerPage from './components/QRScannerPage';
 import AuditLogsView from './components/AuditLogsView';
-import AuditLogsView from './components/AuditLogsView';
 import { useStudents } from './hooks/useStudents';
 import { useSessions } from './hooks/useSessions';
 import { useAttendance } from './hooks/useAttendance';
