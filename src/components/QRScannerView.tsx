@@ -146,36 +146,6 @@ export default function QRScannerView({ onScanSuccess }: QRScannerViewProps) {
         stopCamera();
         
         // Auto-clear result after 5 seconds
-  // Extract student ID from QR code data
-  const extractStudentIdFromQR = (qrData: string): string | null => {
-    // Expected format: STU_{studentId}_{timestamp}
-    const match = qrData.match(/^STU_([a-f0-9-]+)_\d+$/);
-    return match ? match[1] : null;
-  };
-
-  // Perform check-in via API
-  const performCheckIn = async (qrData: string): Promise<ScanResult> => {
-    try {
-      const result = await CheckInService.processQRCheckIn(qrData);
-      
-      return {
-        studentName: result.studentName,
-        studentId: result.studentId,
-        checkInTime: result.checkInTime,
-        status: result.status,
-        message: result.message
-      };
-    } catch (error) {
-      return {
-        studentName: '',
-        studentId: '',
-        checkInTime: '',
-        status: 'error',
-        message: 'Failed to process check-in'
-      };
-    }
-  };
-
   // Process detected QR code (updated to pass full QR data)
   const processQRCode = async (qrData: string) => {
     if (isProcessing) return;
@@ -185,7 +155,16 @@ export default function QRScannerView({ onScanSuccess }: QRScannerViewProps) {
 
     try {
       // Call check-in API with full QR data
-      const result = await performCheckIn(qrData);
+      const apiResult = await CheckInService.processQRCheckIn(qrData);
+      
+      const result: ScanResult = {
+        studentName: apiResult.studentName,
+        studentId: apiResult.studentId,
+        checkInTime: apiResult.checkInTime,
+        status: apiResult.status,
+        message: apiResult.message
+      };
+      
       setScanResult(result);
       
       if (result.status === 'success') {
@@ -206,17 +185,6 @@ export default function QRScannerView({ onScanSuccess }: QRScannerViewProps) {
     } finally {
       setIsProcessing(false);
     }
-  };
-
-  // Remove duplicate function - keep the updated one
-  const performCheckInOld = async (studentId: string): Promise<ScanResult> => {
-    return {
-      studentName: '',
-      studentId: '',
-      checkInTime: '',
-      status: 'success',
-      message: ''
-    };
   };
 
   // Reset scanner
