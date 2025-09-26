@@ -20,12 +20,21 @@ export class UserService {
     return data.map(this.mapRoleFromDB);
   }
 
-  static async getAllParents(): Promise<Parent[]> {
+  static async getAllParents(page = 1, pageSize = 10): Promise<{ data: Parent[]; count: number }> {
+    const offset = (page - 1) * pageSize;
+    
     // Fetch parents
-    const { data: parentsData, error: parentsError } = await supabase
+    let query = supabase
       .from('parents')
-      .select('*')
+      .select('*', { count: 'exact' })
       .order('created_at', { ascending: false });
+    
+    // Apply pagination only if pageSize is not "all"
+    if (pageSize > 0) {
+      query = query.range(offset, offset + pageSize - 1);
+    }
+    
+    const { data: parentsData, error: parentsError, count } = await query;
 
     if (parentsError) {
       throw new Error(`Failed to fetch parents: ${parentsError.message}`);
@@ -82,9 +91,14 @@ export class UserService {
       console.warn('Failed to fetch student links:', linksError.message);
     }
 
-    return parentsData.map(parent => 
+    const mappedParents = parentsData.map(parent => 
       this.mapParentFromDB(parent, userProfilesData, rolesData || [], linksData || [])
     );
+    
+    return {
+      data: mappedParents,
+      count: count || 0
+    };
   }
 
   static async createUserWithProfile(request: CreateUserRequest): Promise<{ user: any; parent?: Parent }> {

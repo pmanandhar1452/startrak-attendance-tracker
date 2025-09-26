@@ -6,20 +6,22 @@ import { QRService } from '../services/qrService';
 export function useUsers() {
   const [parents, setParents] = useState<Parent[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = async (page = 1, pageSize = 10) => {
     try {
       setLoading(true);
       setError(null);
       
-      const [parentsData, rolesData] = await Promise.all([
-        UserService.getAllParents(),
+      const [parentsResult, rolesData] = await Promise.all([
+        UserService.getAllParents(page, pageSize),
         UserService.getAllRoles()
       ]);
       
-      setParents(parentsData);
+      setParents(parentsResult.data);
+      setTotalCount(parentsResult.count);
       setRoles(rolesData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch user data');
@@ -34,7 +36,7 @@ export function useUsers() {
       const result = await UserService.createUserWithProfile(request);
       
       // Refresh data to show new user
-      await fetchData();
+      await fetchData(1, 10); // Reset to first page after creating user
       
       return result;
     } catch (err) {
@@ -50,7 +52,7 @@ export function useUsers() {
       await UserService.linkParentToStudents(parentId, studentIds);
       
       // Refresh data to show updated links
-      await fetchData();
+      await fetchData(1, 10); // Reset to first page after linking
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to link students';
       setError(errorMessage);
@@ -68,7 +70,7 @@ export function useUsers() {
       await QRService.updateParentQRCodeUrl(parentId, qrCodeUrl);
       
       // Refresh data to show updated QR code
-      await fetchData();
+      await fetchData(1, 10); // Reset to first page after generating QR
       
       return qrCode;
     } catch (err) {
@@ -84,7 +86,7 @@ export function useUsers() {
       await UserService.deleteUser(userId);
       
       // Refresh data to remove deleted user
-      await fetchData();
+      await fetchData(1, 10); // Reset to first page after deleting
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete user';
       setError(errorMessage);
@@ -92,19 +94,16 @@ export function useUsers() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   return {
     parents,
     roles,
+    totalCount,
     loading,
     error,
     createUser,
     linkParentToStudents,
     generateQRCode,
     deleteUser,
-    refetch: fetchData
+    fetchData
   };
 }

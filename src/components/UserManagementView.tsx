@@ -8,13 +8,17 @@ import { QRService } from '../services/qrService';
 import MultiSelectDropdown from './MultiSelectDropdown';
 
 export default function UserManagementView() {
-  const { parents, roles, loading, error, createUser, linkParentToStudents, generateQRCode, deleteUser } = useUsers();
+  const { parents, roles, totalCount, loading, error, createUser, linkParentToStudents, generateQRCode, deleteUser, fetchData } = useUsers();
   const { students } = useStudents();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showLinkForm, setShowLinkForm] = useState<Parent | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const [formData, setFormData] = useState<CreateUserRequest>({
     email: '',
@@ -25,6 +29,25 @@ export default function UserManagementView() {
   });
 
   const [linkFormData, setLinkFormData] = useState<string[]>([]);
+
+  // Calculate pagination values
+  const totalPages = pageSize === -1 ? 1 : Math.ceil(totalCount / pageSize);
+  const startRecord = pageSize === -1 ? 1 : (currentPage - 1) * pageSize + 1;
+  const endRecord = pageSize === -1 ? totalCount : Math.min(currentPage * pageSize, totalCount);
+
+  // Load data when pagination changes
+  useEffect(() => {
+    fetchData(currentPage, pageSize === -1 ? 0 : pageSize);
+  }, [currentPage, pageSize, fetchData]);
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -378,8 +401,24 @@ export default function UserManagementView() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-900">List of Users</h2>
-          <div className="text-sm text-gray-500">
-            {parents.length} {parents.length === 1 ? 'user' : 'users'}
+          <div className="flex items-center space-x-4">
+            <div className="text-sm text-gray-500">
+              {totalCount} {totalCount === 1 ? 'user' : 'users'} total
+            </div>
+            <div className="flex items-center space-x-2">
+              <label className="text-sm font-medium text-gray-700">Show:</label>
+              <select
+                value={pageSize}
+                onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
+                className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value={10}>10</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={-1}>All</option>
+              </select>
+              <span className="text-sm text-gray-500">per page</span>
+            </div>
           </div>
         </div>
         
@@ -523,6 +562,63 @@ export default function UserManagementView() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+        
+        {/* Pagination Controls */}
+        {pageSize !== -1 && totalPages > 1 && (
+          <div className="mt-6 flex items-center justify-between border-t border-gray-200 pt-4">
+            <div className="text-sm text-gray-700">
+              Showing {startRecord} to {endRecord} of {totalCount} results
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              
+              <div className="flex items-center space-x-1">
+                {/* Show page numbers */}
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                        currentPage === pageNum
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-700 hover:bg-gray-50 border border-gray-300'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>
