@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, Mail, Key, QrCode, Link, Plus, Trash2, Send, AlertCircle, CheckCircle, UserPlus, Shield } from 'lucide-react';
+import { Users, Mail, Key, QrCode, Link, Plus, Trash2, Send, AlertCircle, CheckCircle, UserPlus, Shield, X } from 'lucide-react';
 import { CreateUserRequest, Parent, Student } from '../types';
 import { useUsers } from '../hooks/useUsers';
 import { useStudents } from '../hooks/useStudents';
@@ -193,154 +193,187 @@ export default function UserManagementView() {
       </div>
 
       {/* Create User Form */}
+      {/* Create User Modal */}
       {showCreateForm && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Create New User</h2>
-          <form onSubmit={handleCreateUser} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="Leave empty to auto-generate"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">If empty, a random password will be generated</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
-                <select
-                  required
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">Create New User</h2>
+                <button
+                  onClick={() => setShowCreateForm(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  <option value="parent">Parent/Caretaker</option>
-                  <option value="instructor">Instructor</option>
-                  <option value="admin">Administrator</option>
-                </select>
+                  <X className="h-6 w-6" />
+                </button>
               </div>
             </div>
+            
+            <div className="p-6">
+              <form onSubmit={handleCreateUser} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.fullName}
+                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
 
-            {formData.role === 'parent' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Link to Students</label>
-                <MultiSelectDropdown
-                  options={students.map(student => ({
-                    id: student.id,
-                    label: student.name,
-                    sublabel: `${student.studentId} • ${student.subject}`
-                  }))}
-                  selectedValues={formData.linkedStudentIds || []}
-                  onChange={(selectedIds) => setFormData({ ...formData, linkedStudentIds: selectedIds })}
-                  placeholder="Select students to link..."
-                  searchPlaceholder="Search students..."
-                  className="w-full"
-                  disabled={isSubmitting}
-                />
-              </div>
-            )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
+                    <input
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
 
-            <div className="flex space-x-4">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="bg-blue-600 text-white font-medium py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-              >
-                {isSubmitting && (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      placeholder="Leave empty to auto-generate"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">If empty, a random password will be generated</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+                    <select
+                      required
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="parent">Parent/Caretaker</option>
+                      <option value="instructor">Instructor</option>
+                      <option value="admin">Administrator</option>
+                    </select>
+                  </div>
+                </div>
+
+                {formData.role === 'parent' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Link to Students</label>
+                    <MultiSelectDropdown
+                      options={students.map(student => ({
+                        id: student.id,
+                        label: student.name,
+                        sublabel: `${student.studentId} • ${student.subject}`
+                      }))}
+                      selectedValues={formData.linkedStudentIds || []}
+                      onChange={(selectedIds) => setFormData({ ...formData, linkedStudentIds: selectedIds })}
+                      placeholder="Select students to link..."
+                      searchPlaceholder="Search students..."
+                      className="w-full"
+                      disabled={isSubmitting}
+                    />
+                  </div>
                 )}
-                <span>Create User & Send Credentials</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowCreateForm(false)}
-                disabled={isSubmitting}
-                className="bg-gray-200 text-gray-800 font-medium py-2 px-6 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
+
+                <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateForm(false)}
+                    disabled={isSubmitting}
+                    className="bg-gray-200 text-gray-800 font-medium py-2 px-6 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="bg-blue-600 text-white font-medium py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    {isSubmitting && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    )}
+                    <span>Create User & Send Credentials</span>
+                  </button>
+                </div>
+              </form>
             </div>
-          </form>
+          </div>
         </div>
       )}
-
       {/* Link Students Form */}
+      {/* Link Students Modal */}
       {showLinkForm && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Link Students to {showLinkForm.userProfile?.fullName}
-          </h2>
-          <form onSubmit={handleLinkStudents} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Select Students to Link</label>
-              <MultiSelectDropdown
-                options={students.map(student => ({
-                  id: student.id,
-                  label: student.name,
-                  sublabel: `${student.studentId} • ${student.subject}`
-                }))}
-                selectedValues={linkFormData}
-                onChange={setLinkFormData}
-                placeholder="Select students to link..."
-                searchPlaceholder="Search students..."
-                className="w-full"
-                disabled={isSubmitting}
-              />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Link Students to {showLinkForm.userProfile?.fullName}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowLinkForm(null);
+                    setLinkFormData([]);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
             </div>
+            
+            <div className="p-6">
+              <form onSubmit={handleLinkStudents} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Students to Link</label>
+                  <MultiSelectDropdown
+                    options={students.map(student => ({
+                      id: student.id,
+                      label: student.name,
+                      sublabel: `${student.studentId} • ${student.subject}`
+                    }))}
+                    selectedValues={linkFormData}
+                    onChange={setLinkFormData}
+                    placeholder="Select students to link..."
+                    searchPlaceholder="Search students..."
+                    className="w-full"
+                    disabled={isSubmitting}
+                  />
+                </div>
 
-            <div className="flex space-x-4">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="bg-blue-600 text-white font-medium py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-              >
-                {isSubmitting && (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                )}
-                <span>Update Links</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowLinkForm(null);
-                  setLinkFormData([]);
-                }}
-                disabled={isSubmitting}
-                className="bg-gray-200 text-gray-800 font-medium py-2 px-6 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
+                <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowLinkForm(null);
+                      setLinkFormData([]);
+                    }}
+                    disabled={isSubmitting}
+                    className="bg-gray-200 text-gray-800 font-medium py-2 px-6 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="bg-blue-600 text-white font-medium py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    {isSubmitting && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    )}
+                    <span>Update Links</span>
+                  </button>
+                </div>
+              </form>
             </div>
-          </form>
+          </div>
         </div>
       )}
-
       {/* Parents List */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
