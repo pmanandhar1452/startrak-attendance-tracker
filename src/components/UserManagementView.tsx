@@ -37,7 +37,14 @@ export default function UserManagementView() {
 
   // Load data when pagination changes
   useEffect(() => {
-    fetchData(currentPage, pageSize === -1 ? 0 : pageSize);
+    const loadData = async () => {
+      try {
+        await fetchData(currentPage, pageSize === -1 ? 0 : pageSize);
+      } catch (error) {
+        console.error('Failed to load user data:', error);
+      }
+    };
+    loadData();
   }, [currentPage, pageSize, fetchData]);
 
   const handlePageSizeChange = (newPageSize: number) => {

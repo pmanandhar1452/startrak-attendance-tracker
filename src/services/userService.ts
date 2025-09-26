@@ -21,7 +21,17 @@ export class UserService {
   }
 
   static async getAllParents(page = 1, pageSize = 10): Promise<{ data: Parent[]; count: number }> {
-    const offset = (page - 1) * pageSize;
+    let offset = 0;
+    let limit = pageSize;
+    
+    // Handle "All" case (pageSize = 0 or -1)
+    if (pageSize <= 0) {
+      offset = 0;
+      limit = 1000; // Set a reasonable upper limit
+    } else {
+      offset = (page - 1) * pageSize;
+      limit = pageSize;
+    }
     
     // Fetch parents
     let query = supabase
@@ -29,15 +39,23 @@ export class UserService {
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false });
     
-    // Apply pagination only if pageSize is not "all"
+    // Apply pagination
     if (pageSize > 0) {
-      query = query.range(offset, offset + pageSize - 1);
+      query = query.range(offset, offset + limit - 1);
+    } else {
+      // For "All", still apply a reasonable limit to prevent performance issues
+      query = query.limit(limit);
     }
     
     const { data: parentsData, error: parentsError, count } = await query;
 
     if (parentsError) {
+      console.error('Supabase error fetching parents:', parentsError);
       throw new Error(`Failed to fetch parents: ${parentsError.message}`);
+    }
+
+    if (!parentsData) {
+      return { data: [], count: 0 };
     }
 
     // Get user IDs from parents

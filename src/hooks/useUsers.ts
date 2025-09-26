@@ -25,6 +25,7 @@ export function useUsers() {
       setRoles(rolesData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch user data');
+      console.error('Error fetching user data:', err);
     } finally {
       setLoading(false);
     }
