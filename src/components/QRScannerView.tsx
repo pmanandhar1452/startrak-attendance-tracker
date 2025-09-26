@@ -440,10 +440,19 @@ export default function QRScannerView({ onScanSuccess }: QRScannerViewProps) {
           <h3 className="text-lg font-semibold text-blue-900 mb-3">How to Check In</h3>
           <ol className="list-decimal list-inside space-y-2 text-blue-800">
             <li>Allow camera access when prompted</li>
-            <li>Hold your student ID card with QR code facing the camera</li>
+            <li>Hold your student ID card or parent QR code facing the camera</li>
             <li>Position the QR code within the scanning frame</li>
-            <li>Wait for automatic detection and check-in confirmation</li>
+            <li>For students: Wait for automatic check-in confirmation</li>
+            <li>For parents: Select the student you want to check out</li>
           </ol>
+          
+          <div className="mt-4 p-3 bg-blue-100 rounded-lg">
+            <h4 className="font-semibold text-blue-900 mb-2">QR Code Types:</h4>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• <strong>Student QR:</strong> Automatically checks in the student</li>
+              <li>• <strong>Parent QR:</strong> Allows authorized check-out of linked students</li>
+            </ul>
+          </div>
         </div>
       </div>
 
