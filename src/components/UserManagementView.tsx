@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Mail, Key, QrCode, Link, Plus, Trash2, Send, AlertCircle, CheckCircle, UserPlus, Shield, X } from 'lucide-react';
-import { CreateUserRequest, Parent, Student } from '../types';
+import { Users, Mail, Key, QrCode, Link, Plus, Trash2, Send, AlertCircle, CheckCircle, UserPlus, Shield, X, Edit } from 'lucide-react';
+import { CreateUserRequest, Parent, Student, EditUserRequest } from '../types';
 import { useUsers } from '../hooks/useUsers';
 import { useStudents } from '../hooks/useStudents';
 import { EmailService } from '../services/emailService';
@@ -8,10 +8,24 @@ import { QRService } from '../services/qrService';
 import MultiSelectDropdown from './MultiSelectDropdown';
 
 export default function UserManagementView() {
-  const { parents, roles, totalCount, loading, error, createUser, linkParentToStudents, generateQRCode, deleteUser, fetchData } = useUsers();
+  const { parents, roles, totalCount, loading, error, isAdmin, createUser, updateUser, linkParentToStudents, generateQRCode, deleteUser, fetchData } = useUsers();
   const { students } = useStudents();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showLinkForm, setShowLinkForm] = useState<Parent | null>(null);
+  const [showEditForm, setShowEditForm] = useState<Parent | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    onCancel: () => void;
+  }>({
+    show: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    onCancel: () => {}
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -29,6 +43,11 @@ export default function UserManagementView() {
   });
 
   const [linkFormData, setLinkFormData] = useState<string[]>([]);
+  const [editFormData, setEditFormData] = useState<EditUserRequest>({
+    fullName: '',
+    roleId: '',
+    linkedStudentIds: []
+  });
 
   // Calculate pagination values
   const totalPages = pageSize === -1 ? 1 : Math.ceil(totalCount / pageSize);
@@ -52,6 +71,61 @@ export default function UserManagementView() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+  };
+
+  const handleEditUser = (parent: Parent) => {
+    if (!isAdmin) {
+      setSubmitError('Only administrators can edit user records');
+      return;
+    }
+
+    setShowEditForm(parent);
+    setEditFormData({
+      fullName: parent.userProfile?.fullName || '',
+      roleId: parent.userProfile?.roleId || '',
+      linkedStudentIds: parent.linkedStudents.map(s => s.id)
+    });
+  };
+
+  const handleUpdateUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!showEditForm) return;
+
+    // Show confirmation dialog
+    setShowConfirmDialog({
+      show: true,
+      title: 'Confirm User Update',
+      message: `Are you sure you want to update ${showEditForm.userProfile?.fullName}'s record? This action will overwrite the existing data and be logged for auditing purposes.`,
+      onConfirm: async () => {
+        setShowConfirmDialog({ ...showConfirmDialog, show: false });
+        await performUserUpdate();
+      },
+      onCancel: () => {
+        setShowConfirmDialog({ ...showConfirmDialog, show: false });
+      }
+    });
+  };
+
+  const performUserUpdate = async () => {
+    if (!showEditForm?.userId) return;
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      await updateUser(showEditForm.userId, editFormData);
+      setSuccessMessage(`Successfully updated ${showEditForm.userProfile?.fullName}'s record`);
+      setShowEditForm(null);
+      setEditFormData({
+        fullName: '',
+        roleId: '',
+        linkedStudentIds: []
+      });
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Failed to update user');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -541,14 +615,23 @@ export default function UserManagementView() {
                             setShowLinkForm(parent);
                             setLinkFormData(parent.linkedStudents.map(s => s.id));
                           }}
+                          disabled={!isAdmin}
                           className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
                           title="Link Students"
                         >
                           <Link className="h-4 w-4" />
                         </button>
                         <button
+                          onClick={() => handleEditUser(parent)}
+                          disabled={!isAdmin}
+                          className="text-purple-600 hover:text-purple-900 p-1 rounded hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Edit User"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
                           onClick={() => handleGenerateQR(parent)}
-                          disabled={isSubmitting}
+                          disabled={isSubmitting || !isAdmin}
                           className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50 disabled:opacity-50"
                           title="Generate QR Code"
                         >
@@ -556,6 +639,7 @@ export default function UserManagementView() {
                         </button>
                         <button
                           onClick={() => handleDeleteUser(parent)}
+                          disabled={!isAdmin}
                           className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
                           title="Delete User"
                         >
@@ -627,6 +711,162 @@ export default function UserManagementView() {
           </div>
         )}
       </div>
-    </div>
-  );
-}
+
+      {/* Edit User Modal */}
+      {showEditForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Edit User: {showEditForm.userProfile?.fullName}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowEditForm(null);
+                    setEditFormData({
+                      fullName: '',
+                      roleId: '',
+                      linkedStudentIds: []
+                    });
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <form onSubmit={handleUpdateUser} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editFormData.fullName}
+                      onChange={(e) => setEditFormData({ ...editFormData, fullName: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+                    <select
+                      required
+                      value={editFormData.roleId}
+                      onChange={(e) => setEditFormData({ ...editFormData, roleId: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Select Role</option>
+                      {roles.map((role) => (
+                        <option key={role.id} value={role.id}>
+                          {role.roleName.charAt(0).toUpperCase() + role.roleName.slice(1)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Show student linking only for parent role */}
+                {roles.find(r => r.id === editFormData.roleId)?.roleName === 'parent' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Linked Students</label>
+                    <MultiSelectDropdown
+                      options={students.map(student => ({
+                        id: student.id,
+                        label: student.name,
+                        sublabel: `${student.studentId} • ${student.subject}`
+                      }))}
+                      selectedValues={editFormData.linkedStudentIds || []}
+                      onChange={(selectedIds) => setEditFormData({ ...editFormData, linkedStudentIds: selectedIds })}
+                      placeholder="Select students to link..."
+                      searchPlaceholder="Search students..."
+                      className="w-full"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                )}
+
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-2">
+                    <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                    <div>
+                      <h4 className="text-sm font-medium text-amber-800">Important Notice</h4>
+                      <p className="text-sm text-amber-700 mt-1">
+                        All changes will be logged for auditing purposes. This action will overwrite existing data and cannot be undone.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditForm(null);
+                      setEditFormData({
+                        fullName: '',
+                        roleId: '',
+                        linkedStudentIds: []
+                      });
+                    }}
+                    disabled={isSubmitting}
+                    className="bg-gray-200 text-gray-800 font-medium py-2 px-6 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="bg-purple-600 text-white font-medium py-2 px-6 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    {isSubmitting && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    )}
+                    <span>Update User</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Dialog */}
+      {showConfirmDialog.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="flex-shrink-0 w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                  <AlertCircle className="h-6 w-6 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">{showConfirmDialog.title}</h3>
+                </div>
+              </div>
+              
+              <p className="text-gray-600 mb-6">{showConfirmDialog.message}</p>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={showConfirmDialog.onCancel}
+                  disabled={isSubmitting}
+                  className="bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={showConfirmDialog.onConfirm}
+                  disabled={isSubmitting}
+                  className="bg-amber-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-amber-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
+                >
+                  {isSubmitting && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  )}
+                  <span>Confirm Update</span>
+                </button>
+              </div>
+            
