@@ -98,9 +98,8 @@ export default function QRScannerView({ onScanSuccess }: QRScannerViewProps) {
       // Get image data from canvas
       const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
       
-      // Simple QR code detection (in a real implementation, you'd use a library like jsQR)
-      // For demo purposes, we'll simulate QR code detection
-      const qrCodeData = await simulateQRCodeDetection(imageData);
+      // Detect QR code using jsQR
+      const qrCodeData = await detectQRCode(imageData);
       
       if (qrCodeData) {
         await processQRCode(qrCodeData);
@@ -110,10 +109,9 @@ export default function QRScannerView({ onScanSuccess }: QRScannerViewProps) {
     }
   };
 
-  // Simulate QR code detection (replace with actual QR library in production)
-  const simulateQRCodeDetection = async (imageData: ImageData): Promise<string | null> => {
+  // Detect QR code using jsQR library
+  const detectQRCode = async (imageData: ImageData): Promise<string | null> => {
     try {
-      // Use jsQR library for actual QR code detection
       const code = jsQR(imageData.data, imageData.width, imageData.height);
       return code ? code.data : null;
     } catch (error) {
@@ -123,30 +121,6 @@ export default function QRScannerView({ onScanSuccess }: QRScannerViewProps) {
   };
 
   // Process detected QR code
-  const processQRCode = async (qrData: string) => {
-    if (isProcessing) return;
-    
-    setIsProcessing(true);
-    setError(null);
-
-    try {
-      // Extract student ID from QR code
-      const studentId = extractStudentIdFromQR(qrData);
-      if (!studentId) {
-        throw new Error('Invalid QR code format');
-      }
-
-      // Call check-in API
-      const result = await performCheckIn(studentId);
-      setScanResult(result);
-      
-      if (result.status === 'success') {
-        onScanSuccess?.(studentId);
-        // Stop scanning after successful check-in
-        stopCamera();
-        
-        // Auto-clear result after 5 seconds
-  // Process detected QR code (updated to pass full QR data)
   const processQRCode = async (qrData: string) => {
     if (isProcessing) return;
     
