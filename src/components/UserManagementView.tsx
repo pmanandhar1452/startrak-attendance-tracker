@@ -5,6 +5,7 @@ import { useUsers } from '../hooks/useUsers';
 import { useStudents } from '../hooks/useStudents';
 import { EmailService } from '../services/emailService';
 import { QRService } from '../services/qrService';
+import MultiSelectDropdown from './MultiSelectDropdown';
 
 export default function UserManagementView() {
   const { parents, roles, loading, error, createUser, linkParentToStudents, generateQRCode, deleteUser } = useUsers();
@@ -249,26 +250,19 @@ export default function UserManagementView() {
             {formData.role === 'parent' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Link to Students</label>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                  {students.map((student) => (
-                    <label key={student.id} className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.linkedStudentIds?.includes(student.id) || false}
-                        onChange={(e) => {
-                          const studentIds = formData.linkedStudentIds || [];
-                          if (e.target.checked) {
-                            setFormData({ ...formData, linkedStudentIds: [...studentIds, student.id] });
-                          } else {
-                            setFormData({ ...formData, linkedStudentIds: studentIds.filter(id => id !== student.id) });
-                          }
-                        }}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700">{student.name} ({student.studentId})</span>
-                    </label>
-                  ))}
-                </div>
+                <MultiSelectDropdown
+                  options={students.map(student => ({
+                    id: student.id,
+                    label: student.name,
+                    sublabel: `${student.studentId} • ${student.subject}`
+                  }))}
+                  selectedValues={formData.linkedStudentIds || []}
+                  onChange={(selectedIds) => setFormData({ ...formData, linkedStudentIds: selectedIds })}
+                  placeholder="Select students to link..."
+                  searchPlaceholder="Search students..."
+                  className="w-full"
+                  disabled={isSubmitting}
+                />
               </div>
             )}
 
@@ -303,24 +297,21 @@ export default function UserManagementView() {
             Link Students to {showLinkForm.userProfile?.fullName}
           </h2>
           <form onSubmit={handleLinkStudents} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-3">
-              {students.map((student) => (
-                <label key={student.id} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={linkFormData.includes(student.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setLinkFormData(prev => [...prev, student.id]);
-                      } else {
-                        setLinkFormData(prev => prev.filter(id => id !== student.id));
-                      }
-                    }}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">{student.name} ({student.studentId})</span>
-                </label>
-              ))}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Select Students to Link</label>
+              <MultiSelectDropdown
+                options={students.map(student => ({
+                  id: student.id,
+                  label: student.name,
+                  sublabel: `${student.studentId} • ${student.subject}`
+                }))}
+                selectedValues={linkFormData}
+                onChange={setLinkFormData}
+                placeholder="Select students to link..."
+                searchPlaceholder="Search students..."
+                className="w-full"
+                disabled={isSubmitting}
+              />
             </div>
 
             <div className="flex space-x-4">
