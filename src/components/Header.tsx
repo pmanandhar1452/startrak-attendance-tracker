@@ -15,8 +15,7 @@ export default function Header({ activeView, onViewChange }: HeaderProps) {
     { id: 'attendance', label: 'Attendance', icon: Clock },
     { id: 'students', label: 'Students', icon: Users },
     { id: 'sessions', label: 'Sessions', icon: GraduationCap },
-    { id: 'id-cards', label: 'ID Cards', icon: CreditCard },
-    { id: 'id-management', label: 'ID Management', icon: BarChart3 },
+    { id: 'id-management', label: 'ID Management', icon: CreditCard },
     { id: 'qr-scanner', label: 'QR Check-In', icon: QrCode },
     { id: 'users', label: 'Users', icon: UserPlus },
   ];

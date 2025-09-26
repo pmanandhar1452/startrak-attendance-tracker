@@ -6,8 +6,7 @@ import Dashboard from './components/Dashboard';
 import AttendanceView from './components/AttendanceView';
 import StudentsView from './components/StudentsView';
 import SessionsView from './components/SessionsView';
-import IDCardView from './components/IDCardView';
-import IDManagementView from './components/IDManagementView';
+import ConsolidatedIDManagementView from './components/ConsolidatedIDManagementView';
 import UserManagementView from './components/UserManagementView';
 import QRScannerPage from './components/QRScannerPage';
 import { useStudents } from './hooks/useStudents';
@@ -52,10 +51,8 @@ function App() {
         );
       case 'users':
         return <UserManagementView />;
-      case 'id-cards':
-        return <IDCardView />;
       case 'id-management':
-        return <IDManagementView />;
+        return <ConsolidatedIDManagementView />;
       case 'qr-scanner':
         return <QRScannerPage onBack={() => setActiveView('dashboard')} />;
       default:
