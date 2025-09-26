@@ -353,7 +353,7 @@ export default function UserManagementView() {
       {/* Parents List */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-900">Parents & Caretakers</h2>
+          <h2 className="text-lg font-semibold text-gray-900">List of Users</h2>
           <div className="text-sm text-gray-500">
             {parents.length} {parents.length === 1 ? 'user' : 'users'}
           </div>
