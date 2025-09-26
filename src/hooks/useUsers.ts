@@ -31,6 +31,11 @@ export function useUsers() {
     }
   };
 
+  // Initial load
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   const createUser = async (request: CreateUserRequest) => {
     try {
       setError(null);
