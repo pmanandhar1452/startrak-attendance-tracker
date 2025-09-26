@@ -1,21 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  Shield, 
-  Clock, 
-  User, 
-  Search, 
-  RefreshCw, 
-  ChevronLeft, 
-  ChevronRight,
-  AlertCircle,
-  Eye,
-  Filter,
-  Calendar,
-  Database,
-  Edit,
-  Trash2,
-  Plus
-} from 'lucide-react';
+import { Shield, Clock, User, Search, RefreshCw, ChevronLeft, ChevronRight, AlertCircle, Eye, Filter, Calendar, Database, CreditCard as Edit, Trash2, Plus } from 'lucide-react';
 import { AuditLog } from '../types';
 import { useAuditLogs } from '../hooks/useAuditLogs';
 
