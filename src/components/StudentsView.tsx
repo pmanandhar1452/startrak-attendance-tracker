@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Mail, BookOpen, Search, Plus, CreditCard as Edit3, Trash2, Calendar, Phone, AlertCircle, Clock, GraduationCap } from 'lucide-react';
 import { Student, WeeklySchedule, TimeSlot } from '../types';
 import { useStudents } from '../hooks/useStudents';
