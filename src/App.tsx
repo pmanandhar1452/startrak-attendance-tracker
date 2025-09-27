@@ -15,13 +15,33 @@ import { useSessions } from './hooks/useSessions';
 import { useAttendance } from './hooks/useAttendance';
 
 function App() {
-  const [activeView, setActiveView] = useState('dashboard');
+  const [activeView, setActiveView] = useState<{ name: string; params?: any }>({ name: 'dashboard' });
+  
+  // User Management state preservation
+  const [userManagementState, setUserManagementState] = useState({
+    searchTerm: '',
+    currentPage: 1,
+    pageSize: 10
+  });
+  
   const { students } = useStudents();
   const { sessions, addSession, updateSession, deleteSession } = useSessions();
   const { attendanceRecords, updateAttendanceRecord } = useAttendance();
 
+  const handleViewChange = (view: string, params?: any) => {
+    setActiveView({ name: view, params });
+  };
+
+  const handleViewStudentDetails = (studentId: string) => {
+    setActiveView({ name: 'students', params: { studentId } });
+  };
+
+  const handleBackToUserManagement = () => {
+    setActiveView({ name: 'users' });
+  };
+
   const renderView = () => {
-    switch (activeView) {
+    switch (activeView.name) {
       case 'dashboard':
         return (
           <Dashboard 
@@ -40,7 +60,12 @@ function App() {
           />
         );
       case 'students':
-        return <StudentsView />;
+        return (
+          <StudentsView 
+            studentId={activeView.params?.studentId}
+            onBackToUserManagement={activeView.params?.studentId ? handleBackToUserManagement : undefined}
+          />
+        );
       case 'sessions':
         return (
           <SessionsView 
@@ -51,11 +76,21 @@ function App() {
           />
         );
       case 'users':
-        return <UserManagementView />;
+        return (
+          <UserManagementView 
+            searchTerm={userManagementState.searchTerm}
+            currentPage={userManagementState.currentPage}
+            pageSize={userManagementState.pageSize}
+            onSearchChange={(searchTerm) => setUserManagementState(prev => ({ ...prev, searchTerm }))}
+            onPageChange={(currentPage) => setUserManagementState(prev => ({ ...prev, currentPage }))}
+            onPageSizeChange={(pageSize) => setUserManagementState(prev => ({ ...prev, pageSize, currentPage: 1 }))}
+            onViewStudentDetails={handleViewStudentDetails}
+          />
+        );
       case 'id-management':
         return <ConsolidatedIDManagementView />;
       case 'qr-scanner':
-        return <QRScannerPage onBack={() => setActiveView('dashboard')} />;
+        return <QRScannerPage onBack={() => handleViewChange('dashboard')} />;
       case 'audit-logs':
         return <AuditLogsView />;
       default:
@@ -67,7 +102,7 @@ function App() {
     <AuthProvider>
       <ProtectedRoute>
         <div className="min-h-screen bg-gray-50">
-          <Header activeView={activeView} onViewChange={setActiveView} />
+          <Header activeView={activeView.name} onViewChange={handleViewChange} />
           
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {renderView()}

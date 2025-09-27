@@ -3,8 +3,13 @@ import { User, Mail, BookOpen, Search, Plus, CreditCard as Edit3, Trash2, Calend
 import { Student, WeeklySchedule, TimeSlot } from '../types';
 import { useStudents } from '../hooks/useStudents';
 
-export default function StudentsView() {
-  const { students, loading, error, addStudent, updateStudent, deleteStudent } = useStudents();
+interface StudentsViewProps {
+  studentId?: string;
+  onBackToUserManagement?: () => void;
+}
+
+export default function StudentsView({ studentId, onBackToUserManagement }: StudentsViewProps) {
+  const { students, loading, error, addStudent, updateStudent, deleteStudent, fetchStudentById } = useStudents();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -14,6 +19,23 @@ export default function StudentsView() {
   const [filterStatus, setFilterStatus] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Load specific student if studentId is provided
+  useEffect(() => {
+    if (studentId) {
+      const loadStudent = async () => {
+        try {
+          const student = await fetchStudentById(studentId);
+          if (student) {
+            setViewingStudent(student);
+          }
+        } catch (err) {
+          console.error('Failed to load student:', err);
+        }
+      };
+      loadStudent();
+    }
+  }, [studentId, fetchStudentById]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -211,12 +233,22 @@ export default function StudentsView() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold text-gray-900">Student Details</h1>
-            <button
-              onClick={() => setViewingStudent(null)}
-              className="bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
-            >
-              Back to List
-            </button>
+            <div className="flex space-x-2">
+              {onBackToUserManagement && (
+                <button
+                  onClick={onBackToUserManagement}
+                  className="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Back to User Management
+                </button>
+              )}
+              <button
+                onClick={() => setViewingStudent(null)}
+                className="bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                {onBackToUserManagement ? 'Back to Students List' : 'Back to List'}
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

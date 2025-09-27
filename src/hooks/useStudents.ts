@@ -20,6 +20,16 @@ export function useStudents() {
     }
   };
 
+  const fetchStudentById = async (id: string): Promise<Student | null> => {
+    try {
+      setError(null);
+      const student = await StudentService.getStudentById(id);
+      return student;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch student');
+      return null;
+    }
+  };
   const addStudent = async (student: Omit<Student, 'id'>) => {
     try {
       setError(null);
@@ -71,6 +81,7 @@ export function useStudents() {
     addStudent,
     updateStudent,
     deleteStudent,
+    fetchStudentById,
     refetch: fetchStudents
   };
 }

@@ -7,7 +7,25 @@ import { EmailService } from '../services/emailService';
 import { QRService } from '../services/qrService';
 import MultiSelectDropdown from './MultiSelectDropdown';
 
-export default function UserManagementView() {
+interface UserManagementViewProps {
+  searchTerm: string;
+  currentPage: number;
+  pageSize: number;
+  onSearchChange: (searchTerm: string) => void;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+  onViewStudentDetails: (studentId: string) => void;
+}
+
+export default function UserManagementView({
+  searchTerm,
+  currentPage,
+  pageSize,
+  onSearchChange,
+  onPageChange,
+  onPageSizeChange,
+  onViewStudentDetails
+}: UserManagementViewProps) {
   const { parents, roles, totalCount, loading, error, createUser, linkParentToStudents, generateQRCode, deleteUser, fetchData } = useUsers();
   const { updateUser } = useUsers();
   const { students } = useStudents();
@@ -17,11 +35,7 @@ export default function UserManagementView() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
   
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
 
   const [formData, setFormData] = useState<CreateUserRequest>({
     email: '',
@@ -72,12 +86,11 @@ export default function UserManagementView() {
   }, []);
 
   const handlePageSizeChange = (newPageSize: number) => {
-    setPageSize(newPageSize);
-    setCurrentPage(1); // Reset to first page when changing page size
+    onPageSizeChange(newPageSize);
   };
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+    onPageChange(page);
   };
 
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -439,7 +452,7 @@ export default function UserManagementView() {
                 type="text"
                 placeholder="Search users..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => onSearchChange(e.target.value)}
                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-64"
               />
             </div>
@@ -545,9 +558,14 @@ export default function UserManagementView() {
                       {parent.linkedStudents.length > 0 && (
                         <div className="mt-1 flex flex-wrap gap-1">
                           {parent.linkedStudents.slice(0, 3).map((student) => (
-                            <span key={student.id} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                            <button
+                              key={student.id}
+                              onClick={() => onViewStudentDetails(student.id)}
+                              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors cursor-pointer"
+                              title={`View ${student.name}'s profile`}
+                            >
                               {student.name}
-                            </span>
+                            </button>
                           ))}
                           {parent.linkedStudents.length > 3 && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
