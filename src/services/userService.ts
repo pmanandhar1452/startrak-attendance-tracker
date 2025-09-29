@@ -145,6 +145,7 @@ export class UserService {
             id,
             role_name
           )
+        )
         `, { count: 'exact' })
         .order('created_at', { ascending: false });
       
@@ -722,5 +723,8 @@ export class UserService {
       createdAt: parentRecord?.created_at || userProfile.created_at,
       updatedAt: parentRecord?.updated_at || userProfile.updated_at
     };
+  }
+}
+    }
   }
 }
