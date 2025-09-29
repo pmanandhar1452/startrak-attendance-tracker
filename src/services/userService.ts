@@ -34,10 +34,16 @@ export class UserService {
         limit = pageSize;
       }
       
-      // Fetch parents
+      // Fetch all user profiles with their roles
       let query = supabase
-        .from('parents')
-        .select('*', { count: 'exact' })
+        .from('user_profiles')
+        .select(`
+          *,
+          roles (
+            id,
+            role_name
+          )
+        `, { count: 'exact' })
         .order('created_at', { ascending: false });
       
       // Apply pagination
@@ -48,44 +54,29 @@ export class UserService {
         query = query.limit(limit);
       }
       
-      const { data: parentsData, error: parentsError, count } = await query;
+      const { data: userProfilesData, error: userProfilesError, count } = await query;
 
-      if (parentsError) {
-        console.error('Supabase error fetching parents:', parentsError);
-        throw new Error(`Failed to fetch parents: ${parentsError.message}`);
+      if (userProfilesError) {
+        console.error('Supabase error fetching user profiles:', userProfilesError);
+        throw new Error(`Failed to fetch user profiles: ${userProfilesError.message}`);
       }
 
-      if (!parentsData) {
+      if (!userProfilesData) {
         return { data: [], count: 0 };
       }
 
-      // Get user IDs from parents
-      const userIds = parentsData.map(parent => parent.user_id).filter(Boolean);
+      // Get user IDs from user profiles
+      const userIds = userProfilesData.map(profile => profile.id);
       
-      // Fetch user profiles separately
-      let userProfilesData: UserProfileRow[] = [];
-      if (userIds.length > 0) {
-        const { data: profiles, error: profilesError } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .in('id', userIds);
+      // Fetch parent records for users who have them
+      const { data: parentsData, error: parentsError } = await supabase
+        .from('parents')
+        .select('*')
+        .in('user_id', userIds);
 
-        if (profilesError) {
-          console.warn('Failed to fetch user profiles:', profilesError.message);
-        } else {
-          userProfilesData = profiles || [];
-        }
+      if (parentsError) {
+        console.warn('Failed to fetch parent records:', parentsError.message);
       }
-
-      // Fetch roles
-      const { data: rolesData, error: rolesError } = await supabase
-        .from('roles')
-        .select('*');
-
-      if (rolesError) {
-        console.warn('Failed to fetch roles:', rolesError.message);
-      }
-
       // Fetch student links
       const { data: linksData, error: linksError } = await supabase
         .from('student_parent_link')
@@ -110,8 +101,9 @@ export class UserService {
         console.warn('Failed to fetch student links:', linksError.message);
       }
 
-      const mappedParents = parentsData.map(parent => 
-        this.mapParentFromDB(parent, userProfilesData, rolesData || [], linksData || [])
+      // Map user profiles to Parent objects (including non-parent users)
+      const mappedParents = userProfilesData.map(userProfile => 
+        this.mapUserProfileToParent(userProfile, parentsData || [], linksData || [])
       );
       
       return {
@@ -582,6 +574,48 @@ export class UserService {
       })),
       createdAt: parent.created_at,
       updatedAt: parent.updated_at
+    };
+  }
+
+  private static mapUserProfileToParent(
+    userProfile: any,
+    parentsData: ParentRow[],
+    linksData: any[]
+  ): Parent {
+    // Find corresponding parent record if it exists
+    const parentRecord = parentsData.find(p => p.user_id === userProfile.id);
+    const parentLinks = parentRecord ? linksData.filter(l => l.parent_id === parentRecord.id) : [];
+
+    return {
+      id: parentRecord?.id || userProfile.id, // Use parent ID if exists, otherwise user profile ID
+      userId: userProfile.id,
+      userProfile: {
+        id: userProfile.id,
+        fullName: userProfile.full_name || undefined,
+        roleId: userProfile.role_id || undefined,
+        roleName: userProfile.roles?.role_name || undefined,
+        avatarUrl: userProfile.avatar_url || undefined,
+        phone: userProfile.phone || undefined,
+        createdAt: userProfile.created_at,
+        updatedAt: userProfile.updated_at
+      },
+      qrCode: parentRecord?.qr_code || undefined,
+      qrCodeUrl: parentRecord?.qr_code_url || undefined,
+      linkedStudents: parentLinks.map((link: any) => ({
+        id: link.students?.id || '',
+        name: link.students?.name || '',
+        studentId: link.students?.student_id || '',
+        email: link.students?.email || '',
+        level: link.students?.level || '',
+        subject: link.students?.subject || '',
+        program: link.students?.program || undefined,
+        avatar: link.students?.avatar || undefined,
+        schedule: {},
+        enrollmentDate: link.students?.enrollment_date || '',
+        status: link.students?.status || 'active'
+      })),
+      createdAt: parentRecord?.created_at || userProfile.created_at,
+      updatedAt: parentRecord?.updated_at || userProfile.updated_at
     };
   }
 }

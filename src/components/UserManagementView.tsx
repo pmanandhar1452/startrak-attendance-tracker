@@ -64,13 +64,14 @@ export default function UserManagementView({
   const [showConfirmation, setShowConfirmation] = useState(false);
 
   // Filter parents based on search term
-  const filteredParents = parents.filter(parent => {
+  const filteredUsers = parents.filter(user => {
     const searchLower = searchTerm.toLowerCase();
     return (
-      parent.userProfile?.fullName?.toLowerCase().includes(searchLower) ||
-      parent.id.toLowerCase().includes(searchLower) ||
-      parent.qrCode?.toLowerCase().includes(searchLower) ||
-      parent.linkedStudents.some(student => 
+      user.userProfile?.fullName?.toLowerCase().includes(searchLower) ||
+      user.id.toLowerCase().includes(searchLower) ||
+      user.qrCode?.toLowerCase().includes(searchLower) ||
+      user.userProfile?.roleName?.toLowerCase().includes(searchLower) ||
+      user.linkedStudents.some(student => 
         student.name.toLowerCase().includes(searchLower) ||
         student.studentId.toLowerCase().includes(searchLower)
       )
@@ -521,21 +522,21 @@ export default function UserManagementView({
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredParents.map((parent) => (
-                  <tr key={parent.id} className="hover:bg-gray-50">
+                {filteredUsers.map((user) => (
+                  <tr key={user.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
                           <span className="text-white font-semibold text-sm">
-                            {parent.userProfile?.fullName?.charAt(0) || 'P'}
+                            {user.userProfile?.fullName?.charAt(0) || 'U'}
                           </span>
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">
-                            {parent.userProfile?.fullName || 'Unknown User'}
+                            {user.userProfile?.fullName || 'Unknown User'}
                           </div>
                           <div className="text-sm text-gray-500">
-                            ID: {parent.id.slice(0, 8)}...
+                            ID: {user.id.slice(0, 8)}...
                           </div>
                         </div>
                       </div>
@@ -544,16 +545,16 @@ export default function UserManagementView({
                       <div className="flex items-center space-x-2">
                         <Shield className="h-4 w-4 text-gray-400" />
                         <span className="text-sm text-gray-900 capitalize">
-                          {parent.userProfile?.roleName || 'parent'}
+                          {user.userProfile?.roleName || 'user'}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {parent.qrCode ? (
+                      {user.qrCode ? (
                         <div className="flex items-center space-x-2">
                           <QrCode className="h-4 w-4 text-green-600" />
                           <span className="text-sm font-mono text-gray-900">
-                            {parent.qrCode}
+                            {user.qrCode}
                           </span>
                         </div>
                       ) : (
@@ -564,12 +565,12 @@ export default function UserManagementView({
                       <div className="flex items-center space-x-2">
                         <Users className="h-4 w-4 text-gray-400" />
                         <span className="text-sm text-gray-900">
-                          {parent.linkedStudents.length} students
+                          {user.linkedStudents.length} students
                         </span>
                       </div>
-                      {parent.linkedStudents.length > 0 && (
+                      {user.linkedStudents.length > 0 && (
                         <div className="mt-1 flex flex-wrap gap-1">
-                          {parent.linkedStudents.slice(0, 3).map((student) => (
+                          {user.linkedStudents.slice(0, 3).map((student) => (
                             <button
                               key={student.id}
                               onClick={() => onViewStudentDetails(student.id)}
@@ -579,9 +580,9 @@ export default function UserManagementView({
                               {student.name}
                             </button>
                           ))}
-                          {parent.linkedStudents.length > 3 && (
+                          {user.linkedStudents.length > 3 && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                              +{parent.linkedStudents.length - 3} more
+                              +{user.linkedStudents.length - 3} more
                             </span>
                           )}
                         </div>
@@ -590,10 +591,10 @@ export default function UserManagementView({
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div>
                         <div className="font-medium text-gray-900">
-                          {new Date(parent.createdAt).toLocaleDateString()}
+                          {new Date(user.createdAt).toLocaleDateString()}
                         </div>
                         <div className="text-xs text-gray-500">
-                          {new Date(parent.createdAt).toLocaleTimeString([], { 
+                          {new Date(user.createdAt).toLocaleTimeString([], { 
                             hour: '2-digit', 
                             minute: '2-digit',
                             hour12: true 
@@ -605,11 +606,11 @@ export default function UserManagementView({
                       <div className="flex items-center justify-end space-x-2">
                         <button
                           onClick={() => {
-                            setEditingUser(parent);
+                            setEditingUser(user);
                             setEditFormData({
-                              fullName: parent.userProfile?.fullName || '',
-                              roleId: parent.userProfile?.roleId || '',
-                              linkedStudentIds: parent.linkedStudents.map(s => s.id)
+                              fullName: user.userProfile?.fullName || '',
+                              roleId: user.userProfile?.roleId || '',
+                              linkedStudentIds: user.linkedStudents.map(s => s.id)
                             });
                           }}
                           className="text-purple-600 hover:text-purple-900 p-1 rounded hover:bg-purple-50"
@@ -617,26 +618,31 @@ export default function UserManagementView({
                         >
                           <Edit className="h-4 w-4" />
                         </button>
+                        {/* Only show parent-specific actions for parent role */}
+                        {user.userProfile?.roleName === 'parent' && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setShowLinkForm(user);
+                                setLinkFormData(user.linkedStudents.map(s => s.id));
+                              }}
+                              className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                              title="Link Students"
+                            >
+                              <Link className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleGenerateQR(user)}
+                              disabled={isSubmitting}
+                              className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50 disabled:opacity-50"
+                              title="Generate QR Code"
+                            >
+                              <QrCode className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
                         <button
-                          onClick={() => {
-                            setShowLinkForm(parent);
-                            setLinkFormData(parent.linkedStudents.map(s => s.id));
-                          }}
-                          className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
-                          title="Link Students"
-                        >
-                          <Link className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleGenerateQR(parent)}
-                          disabled={isSubmitting}
-                          className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50 disabled:opacity-50"
-                          title="Generate QR Code"
-                        >
-                          <QrCode className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(parent)}
+                          onClick={() => handleDeleteUser(user)}
                           className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
                           title="Delete User"
                         >
@@ -654,7 +660,7 @@ export default function UserManagementView({
         {/* User Count Display */}
         <div className="mt-4 flex justify-end">
           <div className="text-sm text-gray-500">
-            {filteredParents.length} of {totalCount} {totalCount === 1 ? 'user' : 'users'}
+            {filteredUsers.length} of {totalCount} {totalCount === 1 ? 'user' : 'users'}
             {searchTerm && ` matching "${searchTerm}"`}
           </div>
         </div>
