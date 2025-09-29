@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Search, CreditCard as Edit3, Trash2, Eye, Calendar, Mail, Phone, MapPin, BookOpen, GraduationCap, UserPlus, X, AlertCircle, CheckCircle, Clock, QrCode, CreditCard, Download, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Filter, Square, CheckSquare, Loader, Printer } from 'lucide-react';
+import { Users, Search, Plus, Eye, Edit3, Trash2, QrCode, CreditCard, ChevronUp, ChevronDown, Filter, Calendar, Mail, Phone, BookOpen, GraduationCap, MapPin, FileText, Clock, CheckCircle, XCircle, AlertCircle, User, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Student, IDCardTemplate, AttendanceRecord, Session } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useStudents } from '../hooks/useStudents';
@@ -36,6 +36,76 @@ export default function StudentsView({
   const { user } = useAuth();
   const { students: hookStudents, loading, error, addStudent, updateStudent, deleteStudent, fetchStudentById } = useStudents();
   const { qrCodes, generateQRCode, generateIDCard, batchGenerateIDCards, deleteQRCode } = useIDCards();
+  // Handle add student form submission
+  const handleAddStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setAddStudentErrors({});
+    setSubmitError(null);
+    setSuccessMessage(null);
+
+    try {
+      // Validate required fields
+      const errors: Record<string, string> = {};
+      if (!addStudentData.name.trim()) errors.name = 'Name is required';
+      if (!addStudentData.studentId.trim()) errors.studentId = 'Student ID is required';
+      if (!addStudentData.email.trim()) errors.email = 'Email is required';
+      if (!addStudentData.subject.trim()) errors.subject = 'Subject is required';
+
+      // Email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (addStudentData.email && !emailRegex.test(addStudentData.email)) {
+        errors.email = 'Please enter a valid email address';
+      }
+
+      if (Object.keys(errors).length > 0) {
+        setAddStudentErrors(errors);
+        return;
+      }
+
+      // Create student object
+      const newStudent: Omit<Student, 'id'> = {
+        name: addStudentData.name.trim(),
+        studentId: addStudentData.studentId.trim(),
+        email: addStudentData.email.trim(),
+        level: addStudentData.level,
+        subject: addStudentData.subject.trim(),
+        program: addStudentData.program.trim() || undefined,
+        contactNumber: addStudentData.contactNumber.trim() || undefined,
+        emergencyContact: addStudentData.emergencyContact.trim() || undefined,
+        notes: addStudentData.notes.trim() || undefined,
+        schedule: addStudentData.schedule,
+        enrollmentDate: new Date().toISOString().split('T')[0],
+        status: 'active'
+      };
+
+      await addStudent(newStudent);
+      setSuccessMessage(`Student ${addStudentData.name} created successfully!`);
+      
+      // Reset form
+      setAddStudentData({
+        name: '',
+        studentId: '',
+        email: '',
+        level: 'Beginner',
+        subject: '',
+        program: '',
+        contactNumber: '',
+        emergencyContact: '',
+        notes: '',
+        schedule: {}
+      });
+      setShowAddStudentModal(false);
+      
+      // Auto-clear success message after 5 seconds
+      setTimeout(() => setSuccessMessage(null), 5000);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Failed to create student');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   
   // Use prop students if provided, otherwise use hook students
   const students = propStudents.length > 0 ? propStudents : hookStudents;
@@ -81,6 +151,20 @@ export default function StudentsView({
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [generatedCards, setGeneratedCards] = useState<IDCardTemplate[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [addStudentData, setAddStudentData] = useState({
+    name: '',
+    studentId: '',
+    email: '',
+    level: 'Beginner' as const,
+    subject: '',
+    program: '',
+    contactNumber: '',
+    emergencyContact: '',
+    notes: '',
+    schedule: {} as WeeklySchedule
+  });
+  const [addStudentErrors, setAddStudentErrors] = useState<Record<string, string>>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
