@@ -13,9 +13,7 @@ export class UserService {
       .select('*')
       .order('role_name');
 
-    if (error) {
-      throw new Error(`Failed to fetch roles: ${error.message}`);
-    }
+   
 
     return data.map(this.mapRoleFromDB);
   }
