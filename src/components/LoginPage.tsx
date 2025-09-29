@@ -20,6 +20,8 @@ export default function LoginPage() {
       if (error) {
         if (error.name === 'ConnectionError') {
           setError('Connection failed. Please check your Supabase configuration in the .env file.');
+        } else if (error.message?.includes('Invalid login credentials') || error.message?.includes('invalid_credentials')) {
+          setError('Invalid email or password. Please create an admin user in your Supabase project first, or verify your credentials.');
         } else {
           setError(error.message);
         }
@@ -128,13 +130,14 @@ export default function LoginPage() {
 
           {/* Demo Credentials */}
           <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
-            <h3 className="text-sm font-medium text-blue-900 mb-2">Demo Credentials</h3>
+            <h3 className="text-sm font-medium text-blue-900 mb-2">Setup Required</h3>
             <div className="text-xs text-blue-800 space-y-1">
-              <p><strong>Email:</strong> admin@startrak.edu</p>
-              <p><strong>Password:</strong> admin123</p>
+              <p><strong>1.</strong> Go to your Supabase project → Authentication → Users</p>
+              <p><strong>2.</strong> Click "Add user" and create an admin account</p>
+              <p><strong>3.</strong> Use those credentials to sign in here</p>
             </div>
             <p className="text-xs text-blue-700 mt-2">
-              Create your admin account in Supabase Auth to get started.
+              <strong>Example:</strong> admin@startrak.edu / admin123
             </p>
           </div>
         </div>
