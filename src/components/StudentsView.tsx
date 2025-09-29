@@ -5,6 +5,7 @@ import { useStudents } from '../hooks/useStudents';
 import { useIDCards } from '../hooks/useIDCards';
 import { useAuth } from '../contexts/AuthContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import AttendanceView from './AttendanceView';
 import SessionsView from './SessionsView';
 
