@@ -449,30 +449,6 @@ export default function StudentsView({
     return Object.keys(errors).length === 0;
   };
 
-      setFormErrors({});
-      setShowAddForm(false);
-      setSubmitSuccess(`Student "${newStudent.name}" added successfully!`);
-      
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to add student';
-      
-      // Handle specific error cases
-      if (errorMessage.includes('duplicate') || errorMessage.includes('unique')) {
-        if (errorMessage.includes('email')) {
-          setSubmitError('A student with this email address already exists.');
-        } else if (errorMessage.includes('student_id')) {
-          setSubmitError('A student with this Student ID already exists.');
-        } else {
-          setSubmitError('A student with this information already exists.');
-        }
-      } else {
-        setSubmitError(errorMessage);
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   // Reset form when modal closes
   const handleCloseAddForm = () => {
     setShowAddForm(false);
@@ -554,6 +530,214 @@ export default function StudentsView({
           <p className="text-gray-600">Manage student records, profiles, and ID cards</p>
         </div>
       </div>
+
+      {/* Add Student Modal */}
+      {showAddStudentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">Add New Student</h2>
+                <button
+                  onClick={() => {
+                    setShowAddStudentModal(false);
+                    setAddStudentErrors({});
+                    setSubmitError(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <form onSubmit={handleAddStudent} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={addStudentData.name}
+                      onChange={(e) => setAddStudentData({ ...addStudentData, name: e.target.value })}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        addStudentErrors.name ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      placeholder="Enter student's full name"
+                    />
+                    {addStudentErrors.name && (
+                      <p className="text-red-600 text-xs mt-1">{addStudentErrors.name}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Student ID *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={addStudentData.studentId}
+                      onChange={(e) => setAddStudentData({ ...addStudentData, studentId: e.target.value })}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        addStudentErrors.studentId ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      placeholder="e.g., STU001"
+                    />
+                    {addStudentErrors.studentId && (
+                      <p className="text-red-600 text-xs mt-1">{addStudentErrors.studentId}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={addStudentData.email}
+                      onChange={(e) => setAddStudentData({ ...addStudentData, email: e.target.value })}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        addStudentErrors.email ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      placeholder="student@example.com"
+                    />
+                    {addStudentErrors.email && (
+                      <p className="text-red-600 text-xs mt-1">{addStudentErrors.email}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Level *
+                    </label>
+                    <select
+                      required
+                      value={addStudentData.level}
+                      onChange={(e) => setAddStudentData({ ...addStudentData, level: e.target.value as any })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="Beginner">Beginner</option>
+                      <option value="Intermediate">Intermediate</option>
+                      <option value="Advanced">Advanced</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Subject *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={addStudentData.subject}
+                      onChange={(e) => setAddStudentData({ ...addStudentData, subject: e.target.value })}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        addStudentErrors.subject ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      placeholder="e.g., Computer Science"
+                    />
+                    {addStudentErrors.subject && (
+                      <p className="text-red-600 text-xs mt-1">{addStudentErrors.subject}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Program
+                    </label>
+                    <input
+                      type="text"
+                      value={addStudentData.program}
+                      onChange={(e) => setAddStudentData({ ...addStudentData, program: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g., Full Stack Development"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Contact Number
+                    </label>
+                    <input
+                      type="tel"
+                      value={addStudentData.contactNumber}
+                      onChange={(e) => setAddStudentData({ ...addStudentData, contactNumber: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="+1-555-0123"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Emergency Contact
+                    </label>
+                    <input
+                      type="tel"
+                      value={addStudentData.emergencyContact}
+                      onChange={(e) => setAddStudentData({ ...addStudentData, emergencyContact: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="+1-555-0124"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Notes
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={addStudentData.notes}
+                    onChange={(e) => setAddStudentData({ ...addStudentData, notes: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Additional notes about the student..."
+                  />
+                </div>
+
+                {submitError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-center space-x-2">
+                      <AlertCircle className="h-5 w-5 text-red-600" />
+                      <p className="text-red-800 font-medium">Error</p>
+                    </div>
+                    <p className="text-red-700 mt-1">{submitError}</p>
+                  </div>
+                )}
+
+                <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddStudentModal(false);
+                      setAddStudentErrors({});
+                      setSubmitError(null);
+                    }}
+                    disabled={isSubmitting}
+                    className="bg-gray-200 text-gray-800 font-medium py-2 px-6 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="bg-blue-600 text-white font-medium py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    {isSubmitting && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    )}
+                    <span>{isSubmitting ? 'Creating...' : 'Create Student'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Success/Error Messages */}
       {submitSuccess && (
