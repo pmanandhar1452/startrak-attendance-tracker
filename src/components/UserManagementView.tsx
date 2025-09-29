@@ -41,7 +41,7 @@ export default function UserManagementView({
     email: '',
     password: '',
     fullName: '',
-    role: 'parent',
+    role: roles.length > 0 ? roles[0].roleName : 'parent',
     linkedStudentIds: []
   });
 
@@ -52,6 +52,13 @@ export default function UserManagementView({
     roleId: '',
     linkedStudentIds: [] as string[]
   });
+
+  // Update form data when roles are loaded
+  useEffect(() => {
+    if (roles.length > 0 && !formData.role) {
+      setFormData(prev => ({ ...prev, role: roles[0].roleName as any }));
+    }
+  }, [roles]);
 
   // Confirmation modal state
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -134,7 +141,7 @@ export default function UserManagementView({
         email: '',
         password: '',
         fullName: '',
-        role: 'parent',
+        role: roles.length > 0 ? roles[0].roleName as any : 'parent',
         linkedStudentIds: []
       });
       setShowCreateForm(false);
@@ -321,10 +328,15 @@ export default function UserManagementView({
                       onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
-                      <option value="parent">Parent/Caretaker</option>
-                      <option value="instructor">Instructor</option>
-                      <option value="admin">Administrator</option>
+                      {roles.map((role) => (
+                        <option key={role.id} value={role.roleName}>
+                          {role.roleName.charAt(0).toUpperCase() + role.roleName.slice(1)}
+                        </option>
+                      ))}
                     </select>
+                    {roles.length === 0 && (
+                      <p className="text-xs text-gray-500 mt-1">Loading roles...</p>
+                    )}
                   </div>
                 </div>
 
