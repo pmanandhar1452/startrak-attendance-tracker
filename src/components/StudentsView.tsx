@@ -95,8 +95,6 @@ export default function StudentsView({
     enrollmentDate: new Date().toISOString().split('T')[0]
   });
 
-  const { user } = useAuth();
-  const isAdmin = user?.user_metadata?.role === 'admin' || user?.email?.includes('admin');
   const [showAddModal, setShowAddModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
