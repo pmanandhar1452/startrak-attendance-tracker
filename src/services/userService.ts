@@ -290,8 +290,8 @@ export class UserService {
     }
 
     // Fetch complete parent data
-    const parentList = await this.getAllParents();
-    const parent = parentList.find(p => p.id === parentData.id);
+    const parentList = await this.getAllParents(1, 1000);
+    const parent = parentList.data.find(p => p.id === parentData.id);
     
     if (!parent) {
       throw new Error('Failed to retrieve created parent');
@@ -440,8 +440,8 @@ export class UserService {
       );
 
       // Return updated parent data
-      const parentList = await this.getAllParents(1, 1000);
-      const updatedParent = parentList.data.find(p => p.userId === userId);
+      const parentListResult = await this.getAllParents(1, 1000);
+      const updatedParent = parentListResult.data.find(p => p.userId === userId);
       
       if (!updatedParent) {
         throw new Error('Failed to retrieve updated parent data');
