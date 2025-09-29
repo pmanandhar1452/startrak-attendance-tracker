@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Mail, Key, QrCode, Link, Plus, Trash2, Send, AlertCircle, CheckCircle, UserPlus, Shield, X, CreditCard as Edit3, Search } from 'lucide-react';
+import { Users, Mail, Key, QrCode, Link, Plus, Trash2, Send, AlertCircle, CheckCircle, UserPlus, Shield, X, Edit, Search } from 'lucide-react';
 import { CreateUserRequest, Parent, Student } from '../types';
 import { useUsers } from '../hooks/useUsers';
 import { useStudents } from '../hooks/useStudents';
@@ -780,7 +780,7 @@ export default function UserManagementView({
                           className="text-purple-600 hover:text-purple-900 p-1 rounded hover:bg-purple-50"
                           title="Edit User"
                         >
-                          <Edit3 className="h-4 w-4" />
+                          <Edit className="h-4 w-4" />
                         </button>
                         
                         {/* Show parent-specific actions for parent role */}
