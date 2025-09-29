@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Search, Plus, Eye, CreditCard as Edit3, Trash2, QrCode, CreditCard, ChevronUp, ChevronDown, Filter, Calendar, Mail, Phone, BookOpen, GraduationCap, MapPin, FileText, Clock, CheckCircle, XCircle, AlertCircle, User, ChevronLeft, ChevronRight, X, Square, CheckSquare, Loader, Download, Printer } from 'lucide-react';
+import { Users, Search, Plus, Edit3, Trash2, Eye, ChevronDown, ChevronUp, ArrowUpDown, Filter, X, CheckCircle, AlertCircle, Calendar, Clock, User, Mail, Phone, BookOpen, GraduationCap, QrCode, CreditCard, Save, RefreshCw } from 'lucide-react';
 import { Student, IDCardTemplate, AttendanceRecord, Session, WeeklySchedule } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useStudents } from '../hooks/useStudents';
@@ -58,6 +58,8 @@ export default function StudentsView({
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [scheduleErrors, setScheduleErrors] = useState<Record<string, string>>({});
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   
@@ -71,7 +73,8 @@ export default function StudentsView({
     program: '',
     contactNumber: '',
     emergencyContact: '',
-    notes: ''
+    notes: '',
+    schedule: {} as WeeklySchedule
   });
 
   // Form validation errors
