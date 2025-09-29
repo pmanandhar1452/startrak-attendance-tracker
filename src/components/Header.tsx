@@ -1,5 +1,5 @@
 import React from 'react';
-import { GraduationCap, Users, Clock, BarChart3, UserPlus, QrCode } from 'lucide-react';
+import { GraduationCap, Users, Clock, BarChart3, UserPlus, QrCode, BookOpen, CreditCard } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface HeaderProps {
@@ -13,7 +13,10 @@ export default function Header({ activeView, onViewChange }: HeaderProps) {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'students', label: 'Students', icon: Users },
+    { id: 'attendance', label: 'Attendance', icon: Clock },
+    { id: 'sessions', label: 'Sessions', icon: BookOpen },
     { id: 'qr-scanner', label: 'QR Check-In', icon: QrCode },
+    { id: 'id-management', label: 'ID Management', icon: CreditCard },
     { id: 'users', label: 'Users', icon: UserPlus },
   ];
 
