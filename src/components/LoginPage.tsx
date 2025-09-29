@@ -142,7 +142,7 @@ export default function LoginPage() {
               <p className="text-xs text-blue-900 font-medium">💡 Suggested Admin Credentials:</p>
               <p className="text-xs text-blue-800 font-mono">Email: admin@startrak.edu</p>
               <p className="text-xs text-blue-800 font-mono">Password: admin123</p>
-            </p>
+            </div>
             <div className="mt-2 text-xs text-blue-700">
               <p><strong>⚠️ Important:</strong> Make sure "Auto Confirm User" is enabled when creating the user!</p>
             </div>
