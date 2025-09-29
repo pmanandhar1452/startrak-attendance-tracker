@@ -678,19 +678,15 @@ export default function UserManagementView({
                       <div className="flex items-center justify-end space-x-2">
                         <button
                           onClick={() => {
-                            setEditingUser(user);
-                            setEditFormData({
-                              fullName: user.userProfile?.fullName || '',
-                              roleId: user.userProfile?.roleId || '',
-                              linkedStudentIds: user.linkedStudents.map(s => s.id)
-                            });
+                            startEditUser(user);
                           }}
                           className="text-purple-600 hover:text-purple-900 p-1 rounded hover:bg-purple-50"
                           title="Edit User"
                         >
                           <Edit3 className="h-4 w-4" />
                         </button>
-                        {/* Only show parent-specific actions for parent role */}
+                        
+                        {/* Show parent-specific actions for parent role */}
                         {user.userProfile?.roleName === 'parent' && (
                           <>
                             <button
@@ -713,6 +709,7 @@ export default function UserManagementView({
                             </button>
                           </>
                         )}
+                        
                         <button
                           onClick={() => handleDeleteUser(user)}
                           className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
