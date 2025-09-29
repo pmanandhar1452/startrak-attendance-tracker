@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Search, Plus, Eye, Edit3, Trash2, Calendar, Phone, Mail, GraduationCap, BookOpen, Clock, CheckCircle, User, Filter, Download, Upload, CreditCard, QrCode, X, AlertCircle, CheckCircle as CheckIcon, UserPlus } from 'lucide-react';
 import { Student, IDCardTemplate, AttendanceRecord, Session } from '../types';
-import { useStudents } from '../hooks/useStudents';
-import { useIDCards } from '../hooks/useIDCards';
 import { useAuth } from '../contexts/AuthContext';
 import AttendanceView from './AttendanceView';
 import SessionsView from './SessionsView';
