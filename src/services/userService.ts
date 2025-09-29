@@ -62,14 +62,14 @@ export class UserService {
         console.error('Supabase error fetching user profiles:', userProfilesError);
         throw new Error(`Failed to fetch user profiles: ${userProfilesError.message}`);
       }
-    if (error) {
+
       if (!userProfilesData || userProfilesData.length === 0) {
         console.log('No user profiles found');
         return { data: [], count: 0 };
       }
       
       console.log('Fetched user profiles:', userProfilesData.length);
-      throw new Error(`Failed to fetch roles: ${error.message}`);
+      
       // Get user IDs from user profiles
       const userIds = userProfilesData.map(profile => profile.id);
       
@@ -78,7 +78,7 @@ export class UserService {
         .from('parents')
         .select('*')
         .in('user_id', userIds);
-    }
+
       if (parentsError) {
         console.warn('Failed to fetch parent records:', parentsError.message);
       }
@@ -102,11 +102,11 @@ export class UserService {
             status
           )
         `);
-    return data.map(this.mapRoleFromDB);
+
       if (linksError) {
         console.warn('Failed to fetch student links:', linksError.message);
       }
-  }
+
       // Map user profiles to Parent objects (including non-parent users)
       const mappedUsers = userProfilesData.map(userProfile => 
         this.mapUserProfileToParent(userProfile, parentsData || [], linksData || [])
@@ -380,9 +380,8 @@ export class UserService {
       const linkInserts = request.linkedStudentIds.map(studentId => ({
         student_id: studentId,
         parent_id: parentData.id
-      }
-      )
-      )
+      }));
+
       const { error: linkError } = await supabase
         .from('student_parent_link')
         .insert(linkInserts);
@@ -578,7 +577,7 @@ export class UserService {
           changed_by: user?.id || null,
           ip_address: null, // Will be populated by database trigger if available
           user_agent: navigator.userAgent || null
-      });
+        });
 
       if (error) {
         console.warn('Failed to create audit log:', error.message);
