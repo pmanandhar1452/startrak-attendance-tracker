@@ -13,6 +13,9 @@ export class UserService {
       .select('*')
       .order('role_name');
 
+    if (error) {
+      throw new Error(`Failed to fetch roles: ${error.message}`);
+    }
    
 
     return data.map(this.mapRoleFromDB);
@@ -99,12 +102,6 @@ export class UserService {
             enrollment_date,
             status
           )
-        `);
-
-      if (linksError) {
-        console.warn('Failed to fetch student links:', linksError.message);
-      }
-
       // Map user profiles to Parent objects (including non-parent users)
       const mappedUsers = userProfilesData.map(userProfile => 
         this.mapUserProfileToParent(userProfile, parentsData || [], linksData || [])
@@ -116,7 +113,7 @@ export class UserService {
         data: mappedUsers,
         count: count || 0
       };
-    
+  
     } catch (error) {
       console.error('Error in getAllUsers:', error);
       throw error;
