@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Search, Filter, ChevronUp, ChevronDown, CreditCard as Edit3, Trash2, Eye, ChevronLeft, ChevronRight, CreditCard, QrCode, Download, Printer, CheckSquare, Square, AlertCircle, CheckCircle, Loader, Clock, BookOpen, GraduationCap, X } from 'lucide-react';
+import { Users, Search, Plus, Eye, Edit3, Trash2, Calendar, Phone, Mail, GraduationCap, BookOpen, Clock, CheckCircle, User, Filter, Download, Upload, CreditCard, QrCode, X, AlertCircle, CheckCircle as CheckIcon, UserPlus } from 'lucide-react';
 import { Student, IDCardTemplate, AttendanceRecord, Session } from '../types';
 import { useStudents } from '../hooks/useStudents';
 import { useIDCards } from '../hooks/useIDCards';
+import { useAuth } from '../contexts/AuthContext';
 import { useAuth } from '../contexts/AuthContext';
 import AttendanceView from './AttendanceView';
 import SessionsView from './SessionsView';
@@ -81,6 +82,27 @@ export default function StudentsView({
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [generatedCards, setGeneratedCards] = useState<IDCardTemplate[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    studentId: '',
+    email: '',
+    level: 'Beginner' as const,
+    subject: '',
+    program: '',
+    contactNumber: '',
+    emergencyContact: '',
+    status: 'active' as const,
+    notes: '',
+    enrollmentDate: new Date().toISOString().split('T')[0]
+  });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const { user } = useAuth();
+  const isAdmin = user?.user_metadata?.role === 'admin' || user?.email?.includes('admin');
   const [idError, setIdError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
