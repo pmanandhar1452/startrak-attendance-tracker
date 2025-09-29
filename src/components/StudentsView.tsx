@@ -1,23 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Search, Filter, ChevronUp, ChevronDown, CreditCard as Edit3, Trash2, Eye, ChevronLeft, ChevronRight, CreditCard, QrCode, Download, Printer, CheckSquare, Square, AlertCircle, CheckCircle, Loader } from 'lucide-react';
-import { Student, IDCardTemplate } from '../types';
+import { Users, Plus, Search, Filter, ChevronUp, ChevronDown, CreditCard as Edit3, Trash2, Eye, ChevronLeft, ChevronRight, CreditCard, QrCode, Download, Printer, CheckSquare, Square, AlertCircle, CheckCircle, Loader, Clock, BookOpen, GraduationCap } from 'lucide-react';
+import { Student, IDCardTemplate, AttendanceRecord, Session } from '../types';
 import { useStudents } from '../hooks/useStudents';
 import { useIDCards } from '../hooks/useIDCards';
+import AttendanceView from './AttendanceView';
+import SessionsView from './SessionsView';
 
 interface StudentsViewProps {
   studentId?: string;
   onBackToUserManagement?: () => void;
+  attendanceRecords?: AttendanceRecord[];
+  students?: Student[];
+  sessions?: Session[];
+  onUpdateAttendance?: (recordId: string, newStatus: string) => void;
+  onAddSession?: (session: Omit<Session, 'id'>) => void;
+  onUpdateSession?: (id: string, updates: Partial<Session>) => void;
+  onDeleteSession?: (id: string) => void;
 }
 
 type SortField = 'name' | 'studentId' | 'level' | 'subject' | 'enrollmentDate' | 'status';
 type SortDirection = 'asc' | 'desc';
 
-export default function StudentsView({ studentId, onBackToUserManagement }: StudentsViewProps) {
-  const { students, loading, error, addStudent, updateStudent, deleteStudent, fetchStudentById } = useStudents();
+export default function StudentsView({ 
+  studentId, 
+  onBackToUserManagement,
+  attendanceRecords = [],
+  students: propStudents = [],
+  sessions = [],
+  onUpdateAttendance,
+  onAddSession,
+  onUpdateSession,
+  onDeleteSession
+}: StudentsViewProps) {
+  const { students: hookStudents, loading, error, addStudent, updateStudent, deleteStudent, fetchStudentById } = useStudents();
   const { qrCodes, generateQRCode, generateIDCard, batchGenerateIDCards, deleteQRCode } = useIDCards();
   
+  // Use prop students if provided, otherwise use hook students
+  const students = propStudents.length > 0 ? propStudents : hookStudents;
+  
   // Tab state
-  const [activeTab, setActiveTab] = useState<'list' | 'id-management'>('list');
+  const [activeTab, setActiveTab] = useState<'list' | 'id-management' | 'attendance' | 'sessions'>('list');
   
   // Table state
   const [searchTerm, setSearchTerm] = useState('');
@@ -359,6 +381,32 @@ export default function StudentsView({ studentId, onBackToUserManagement }: Stud
                 <span>ID Management</span>
               </div>
             </button>
+            <button
+              onClick={() => setActiveTab('attendance')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'attendance'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <Clock className="h-4 w-4" />
+                <span>Attendance</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('sessions')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'sessions'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <GraduationCap className="h-4 w-4" />
+                <span>Sessions</span>
+              </div>
+            </button>
           </nav>
         </div>
 
@@ -652,6 +700,24 @@ export default function StudentsView({ studentId, onBackToUserManagement }: Stud
                 </div>
               )}
             </div>
+          )}
+
+          {activeTab === 'attendance' && onUpdateAttendance && (
+            <AttendanceView 
+              attendanceRecords={attendanceRecords}
+              students={students}
+              sessions={sessions}
+              onUpdateAttendance={onUpdateAttendance}
+            />
+          )}
+
+          {activeTab === 'sessions' && onAddSession && onUpdateSession && onDeleteSession && (
+            <SessionsView 
+              sessions={sessions}
+              onAddSession={onAddSession}
+              onUpdateSession={onUpdateSession}
+              onDeleteSession={onDeleteSession}
+            />
           )}
 
           {activeTab === 'id-management' && (

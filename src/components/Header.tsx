@@ -12,9 +12,7 @@ export default function Header({ activeView, onViewChange }: HeaderProps) {
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-    { id: 'attendance', label: 'Attendance', icon: Clock },
     { id: 'students', label: 'Students', icon: Users },
-    { id: 'sessions', label: 'Sessions', icon: GraduationCap },
     { id: 'qr-scanner', label: 'QR Check-In', icon: QrCode },
     { id: 'users', label: 'Users', icon: UserPlus },
   ];
