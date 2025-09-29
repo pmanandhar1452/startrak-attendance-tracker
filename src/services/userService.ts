@@ -102,6 +102,12 @@ export class UserService {
             enrollment_date,
             status
           )
+        `);
+
+      if (linksError) {
+        console.warn('Failed to fetch student links:', linksError.message);
+      }
+
       // Map user profiles to Parent objects (including non-parent users)
       const mappedUsers = userProfilesData.map(userProfile => 
         this.mapUserProfileToParent(userProfile, parentsData || [], linksData || [])
