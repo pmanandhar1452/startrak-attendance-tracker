@@ -1,26 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Users, 
-  Plus, 
-  Search, 
-  Edit3, 
-  Trash2, 
-  Eye, 
-  Calendar, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  BookOpen, 
-  GraduationCap,
-  UserPlus,
-  X,
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  QrCode,
-  CreditCard,
-  Download
-} from 'lucide-react';
+import { Users, Plus, Search, CreditCard as Edit3, Trash2, Eye, Calendar, Mail, Phone, MapPin, BookOpen, GraduationCap, UserPlus, X, AlertCircle, CheckCircle, Clock, QrCode, CreditCard, Download } from 'lucide-react';
 import { Student, AttendanceRecord, Session } from '../types';
 import { useStudents } from '../hooks/useStudents';
 import { useIDCards } from '../hooks/useIDCards';
