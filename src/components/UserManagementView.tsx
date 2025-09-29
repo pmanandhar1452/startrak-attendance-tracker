@@ -134,10 +134,35 @@ export default function UserManagementView({
     setSubmitError(null);
     setSuccessMessage(null);
 
+    // Validate required fields before sending to API
+    if (!formData.email || !formData.email.trim()) {
+      setSubmitError('Email address is required');
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!formData.fullName || !formData.fullName.trim()) {
+      setSubmitError('Full name is required');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       // Generate random password if not provided
       const password = formData.password || Math.random().toString(36).slice(-8);
-      const requestData = { ...formData, password };
+      const requestData = { 
+        ...formData, 
+        password,
+        email: formData.email.trim(),
+        fullName: formData.fullName.trim()
+      };
+
+      console.log('Sending user creation request:', {
+        email: requestData.email,
+        fullName: requestData.fullName,
+        role: requestData.role,
+        linkedStudentIds: requestData.linkedStudentIds?.length || 0
+      });
 
       const result = await createUser(requestData);
 

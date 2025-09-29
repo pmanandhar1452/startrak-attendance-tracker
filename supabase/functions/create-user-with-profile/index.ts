@@ -31,6 +31,56 @@ serve(async (req) => {
   try {
     const requestData: CreateUserRequest = await req.json()
     
+    console.log('Received user creation request:', {
+      email: requestData.email,
+      fullName: requestData.fullName,
+      role: requestData.role,
+      hasLinkedStudents: requestData.linkedStudentIds?.length || 0
+    })
+
+    // Validate required fields
+    if (!requestData.email || !requestData.email.trim()) {
+      console.error('Email is missing or empty:', requestData.email)
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Email address is required and cannot be empty' 
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      )
+    }
+
+    if (!requestData.fullName || !requestData.fullName.trim()) {
+      console.error('Full name is missing or empty:', requestData.fullName)
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Full name is required and cannot be empty' 
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      )
+    }
+
+    if (!requestData.password || !requestData.password.trim()) {
+      console.error('Password is missing or empty:', requestData.password)
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Password is required and cannot be empty' 
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      )
+    }
+
     // Initialize Supabase client with service role key
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -42,15 +92,15 @@ serve(async (req) => {
       }
     })
 
-    console.log('Creating user with email:', requestData.email)
+    console.log('Creating auth user with email:', requestData.email.trim())
 
     // Step 1: Create auth user using admin API
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: requestData.email,
-      password: requestData.password,
+      email: requestData.email.trim(),
+      password: requestData.password.trim(),
       email_confirm: true,
       user_metadata: {
-        full_name: requestData.fullName
+        full_name: requestData.fullName.trim()
       }
     })
 
