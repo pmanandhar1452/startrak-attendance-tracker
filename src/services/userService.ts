@@ -13,6 +13,13 @@ export class UserService {
       .select('*')
       .order('role_name');
 
+    if (error) {
+      throw new Error(`Failed to fetch roles: ${error.message}`);
+    }
+
+    return data.map(this.mapRoleFromDB);
+  }
+
   static async getAllUsers(page = 1, pageSize = 10): Promise<{ data: Parent[]; count: number }> {
     try {
       console.log('UserService.getAllUsers called with:', { page, pageSize });
