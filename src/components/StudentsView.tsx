@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, BookOpen, Search, Plus, CreditCard as Edit3, Trash2, Calendar, Phone, AlertCircle, Clock, GraduationCap } from 'lucide-react';
+import { User, Mail, BookOpen, Search, Plus, Edit3, Trash2, Calendar, Phone, AlertCircle, Clock, GraduationCap, QrCode, Users, ChevronUp, ChevronDown, Eye } from 'lucide-react';
 import { Student, WeeklySchedule, TimeSlot } from '../types';
 import { useStudents } from '../hooks/useStudents';
 
@@ -7,6 +7,9 @@ interface StudentsViewProps {
   studentId?: string;
   onBackToUserManagement?: () => void;
 }
+
+type SortField = 'name' | 'studentId' | 'email' | 'level' | 'subject' | 'enrollmentDate' | 'status';
+type SortDirection = 'asc' | 'desc';
 
 export default function StudentsView({ studentId, onBackToUserManagement }: StudentsViewProps) {
   const { students, loading, error, addStudent, updateStudent, deleteStudent, fetchStudentById } = useStudents();
@@ -19,6 +22,10 @@ export default function StudentsView({ studentId, onBackToUserManagement }: Stud
   const [filterStatus, setFilterStatus] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Load specific student if studentId is provided
   useEffect(() => {
@@ -58,16 +65,55 @@ export default function StudentsView({ studentId, onBackToUserManagement }: Stud
   const subjects = ['Computer Science', 'Data Science', 'Web Development', 'Cybersecurity', 'Software Engineering', 'AI/Machine Learning', 'Mobile Development', 'DevOps'];
   const sessionTypes = ['Theory', 'Practical', 'Lab', 'Workshop', 'Project Work', 'Review', 'Assessment'];
 
-  const filteredStudents = students.filter(student => {
-    const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         student.subject.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesLevel = !filterLevel || student.level === filterLevel;
-    const matchesSubject = !filterSubject || student.subject === filterSubject;
-    const matchesStatus = !filterStatus || student.status === filterStatus;
-    
-    return matchesSearch && matchesLevel && matchesSubject && matchesStatus;
-  });
+  // Sorting function
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+    setCurrentPage(1); // Reset to first page when sorting
+  };
+
+  // Filter and sort students
+  const filteredAndSortedStudents = students
+    .filter(student => {
+      const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           student.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           student.email.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesLevel = !filterLevel || student.level === filterLevel;
+      const matchesSubject = !filterSubject || student.subject === filterSubject;
+      const matchesStatus = !filterStatus || student.status === filterStatus;
+      
+      return matchesSearch && matchesLevel && matchesSubject && matchesStatus;
+    })
+    .sort((a, b) => {
+      let aValue: any = a[sortField];
+      let bValue: any = b[sortField];
+
+      // Handle date sorting
+      if (sortField === 'enrollmentDate') {
+        aValue = new Date(aValue);
+        bValue = new Date(bValue);
+      }
+
+      // Handle string sorting
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+  // Pagination
+  const totalPages = Math.ceil(filteredAndSortedStudents.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginatedStudents = filteredAndSortedStudents.slice(startIndex, startIndex + pageSize);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,15 +140,6 @@ export default function StudentsView({ studentId, onBackToUserManagement }: Stud
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this student? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      await deleteStudent(id);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete student');
-    }
     if (!confirm('Are you sure you want to delete this student? This action cannot be undone.')) {
       return;
     }
@@ -214,6 +251,15 @@ export default function StudentsView({ studentId, onBackToUserManagement }: Stud
     const scheduledDays = Object.keys(schedule).length;
     const totalSlots = Object.values(schedule).reduce((acc, slots) => acc + (slots?.length || 0), 0);
     return `${scheduledDays} days, ${totalSlots} sessions`;
+  };
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) {
+      return <ChevronUp className="h-4 w-4 text-gray-300" />;
+    }
+    return sortDirection === 'asc' ? 
+      <ChevronUp className="h-4 w-4 text-blue-600" /> : 
+      <ChevronDown className="h-4 w-4 text-blue-600" />;
   };
 
   if (loading) {
@@ -420,7 +466,7 @@ export default function StudentsView({ studentId, onBackToUserManagement }: Stud
         </div>
 
         {/* Filters */}
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-4 gap-4">
           <select
             value={filterLevel}
             onChange={(e) => setFilterLevel(e.target.value)}
@@ -452,6 +498,20 @@ export default function StudentsView({ studentId, onBackToUserManagement }: Stud
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
             <option value="suspended">Suspended</option>
+          </select>
+
+          <select
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value={10}>10 per page</option>
+            <option value={25}>25 per page</option>
+            <option value={50}>50 per page</option>
+            <option value={100}>100 per page</option>
           </select>
         </div>
       </div>
@@ -723,93 +783,241 @@ export default function StudentsView({ studentId, onBackToUserManagement }: Stud
         </div>
       )}
 
-      {/* Students Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredStudents.map((student) => (
-          <div key={student.id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300 overflow-hidden">
-            <div className="p-6">
-              <div className="flex items-center space-x-4 mb-4">
-                {student.avatar ? (
-                  <img
-                    src={student.avatar}
-                    alt={student.name}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-gray-100"
-                  />
-                ) : (
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-teal-400 rounded-full flex items-center justify-center">
-                    <span className="text-white font-semibold text-xl">
-                      {student.name.charAt(0)}
-                    </span>
-                  </div>
-                )}
+      {/* Students Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">Students List</h2>
+            <div className="text-sm text-gray-500">
+              Showing {startIndex + 1}-{Math.min(startIndex + pageSize, filteredAndSortedStudents.length)} of {filteredAndSortedStudents.length} students
+            </div>
+          </div>
+        </div>
 
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-semibold text-gray-900 truncate">
-                    {student.name}
-                  </h3>
-                  <p className="text-sm text-gray-500">{student.studentId}</p>
-                  <div className="flex items-center space-x-2 mt-1">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('name')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Student</span>
+                    <SortIcon field="name" />
+                  </div>
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('studentId')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Student ID</span>
+                    <SortIcon field="studentId" />
+                  </div>
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('level')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Level</span>
+                    <SortIcon field="level" />
+                  </div>
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('subject')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Subject</span>
+                    <SortIcon field="subject" />
+                  </div>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Schedule
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('enrollmentDate')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Enrolled</span>
+                    <SortIcon field="enrollmentDate" />
+                  </div>
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('status')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Status</span>
+                    <SortIcon field="status" />
+                  </div>
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {paginatedStudents.map((student) => (
+                <tr key={student.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      {student.avatar ? (
+                        <img
+                          src={student.avatar}
+                          alt={student.name}
+                          className="w-10 h-10 rounded-full object-cover border-2 border-gray-100"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-teal-400 rounded-full flex items-center justify-center">
+                          <span className="text-white font-semibold text-sm">
+                            {student.name.charAt(0)}
+                          </span>
+                        </div>
+                      )}
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">
+                          {student.name}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {student.email}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-mono text-gray-900">
+                      {student.studentId}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${getLevelColor(student.level)}`}>
                       {student.level}
                     </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{student.subject}</div>
+                    {student.program && (
+                      <div className="text-sm text-gray-500">{student.program}</div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {formatSchedule(student.schedule)}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {new Date(student.enrollmentDate).toLocaleDateString()}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(student.status)}`}>
-                      {student.status}
+                      {student.status.charAt(0).toUpperCase() + student.status.slice(1)}
                     </span>
-                  </div>
-                </div>
-              </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex items-center justify-end space-x-2">
+                      <button
+                        onClick={() => setViewingStudent(student)}
+                        className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                        title="View Details"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => startEdit(student)}
+                        className="text-amber-600 hover:text-amber-900 p-1 rounded hover:bg-amber-50"
+                        title="Edit Student"
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(student.id)}
+                        className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
+                        title="Delete Student"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <BookOpen className="h-4 w-4" />
-                  <span className="truncate">{student.subject}</span>
-                </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <Calendar className="h-4 w-4" />
-                  <span className="truncate">{formatSchedule(student.schedule)}</span>
-                </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <Mail className="h-4 w-4" />
-                  <span className="truncate">{student.email}</span>
-                </div>
-              </div>
+        {paginatedStudents.length === 0 && (
+          <div className="text-center py-12">
+            <User className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Students Found</h3>
+            <p className="text-gray-500">
+              {searchTerm || filterLevel || filterSubject || filterStatus ? 'Try adjusting your search and filter criteria' : 'Start by adding your first student'}
+            </p>
+          </div>
+        )}
 
-              <div className="flex space-x-2">
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-700">
+                Showing {startIndex + 1} to {Math.min(startIndex + pageSize, filteredAndSortedStudents.length)} of {filteredAndSortedStudents.length} results
+              </div>
+              
+              <div className="flex items-center space-x-2">
                 <button
-                  onClick={() => setViewingStudent(student)}
-                  className="flex-1 bg-blue-500 text-white font-medium py-2 px-3 rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center space-x-2"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <User className="h-4 w-4" />
-                  <span>View</span>
+                  Previous
                 </button>
+                
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                          currentPage === pageNum
+                            ? 'bg-blue-600 text-white'
+                            : 'text-gray-700 hover:bg-gray-50 border border-gray-300'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+                
                 <button
-                  onClick={() => startEdit(student)}
-                  className="flex-1 bg-amber-500 text-white font-medium py-2 px-3 rounded-lg hover:bg-amber-600 transition-colors flex items-center justify-center space-x-2"
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Edit3 className="h-4 w-4" />
-                  <span>Edit</span>
-                </button>
-                <button
-                  onClick={() => handleDelete(student.id)}
-                  className="bg-red-500 text-white font-medium py-2 px-3 rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center"
-                >
-                  <Trash2 className="h-4 w-4" />
+                  Next
                 </button>
               </div>
             </div>
           </div>
-        ))}
+        )}
       </div>
-
-      {filteredStudents.length === 0 && (
-        <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
-          <User className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Students Found</h3>
-          <p className="text-gray-500">
-            {searchTerm || filterLevel || filterSubject || filterStatus ? 'Try adjusting your search and filter criteria' : 'Start by adding your first student'}
-          </p>
-        </div>
-      )}
     </div>
   );
 }
