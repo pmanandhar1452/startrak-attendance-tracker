@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Mail, Key, QrCode, Link, Plus, Trash2, Send, AlertCircle, CheckCircle, UserPlus, Shield, X, CreditCard as Edit, Search } from 'lucide-react';
+import { Users, Mail, Key, QrCode, Link, Plus, Trash2, Send, AlertCircle, CheckCircle, UserPlus, Shield, X, Edit3, Search } from 'lucide-react';
 import { CreateUserRequest, Parent, Student } from '../types';
 import { useUsers } from '../hooks/useUsers';
 import { useStudents } from '../hooks/useStudents';
@@ -220,6 +220,51 @@ export default function UserManagementView({
     }
   };
 
+  const handleEditUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser || !editingUser.userId) return;
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      await updateUser(editingUser.userId, {
+        fullName: editFormData.fullName,
+        roleId: editFormData.roleId,
+        linkedStudentIds: editFormData.linkedStudentIds
+      });
+      
+      setSuccessMessage(`User ${editFormData.fullName} updated successfully`);
+      setEditingUser(null);
+      setEditFormData({
+        fullName: '',
+        roleId: '',
+        linkedStudentIds: []
+      });
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Failed to update user');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const startEditUser = (user: Parent) => {
+    setEditingUser(user);
+    setEditFormData({
+      fullName: user.userProfile?.fullName || '',
+      roleId: user.userProfile?.roleId || '',
+      linkedStudentIds: user.linkedStudents.map(s => s.id)
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingUser(null);
+    setEditFormData({
+      fullName: '',
+      roleId: '',
+      linkedStudentIds: []
+    });
+  };
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-64">
