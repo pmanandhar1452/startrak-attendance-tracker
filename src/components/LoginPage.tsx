@@ -130,15 +130,22 @@ export default function LoginPage() {
 
           {/* Demo Credentials */}
           <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
-            <h3 className="text-sm font-medium text-blue-900 mb-2">Setup Required</h3>
+            <h3 className="text-sm font-medium text-blue-900 mb-2">🚀 First Time Setup Required</h3>
             <div className="text-xs text-blue-800 space-y-1">
-              <p><strong>1.</strong> Go to your Supabase project → Authentication → Users</p>
-              <p><strong>2.</strong> Click "Add user" and create an admin account</p>
-              <p><strong>3.</strong> Use those credentials to sign in here</p>
+              <p><strong>Step 1:</strong> Open your Supabase project dashboard</p>
+              <p><strong>Step 2:</strong> Go to Authentication → Users</p>
+              <p><strong>Step 3:</strong> Click "Add user" → "Create new user"</p>
+              <p><strong>Step 4:</strong> Enter email and password (auto-confirm: ON)</p>
+              <p><strong>Step 5:</strong> Use those credentials to sign in here</p>
             </div>
-            <p className="text-xs text-blue-700 mt-2">
-              <strong>Example:</strong> admin@startrak.edu / admin123
+            <div className="mt-3 p-2 bg-blue-100 rounded border border-blue-200">
+              <p className="text-xs text-blue-900 font-medium">💡 Suggested Admin Credentials:</p>
+              <p className="text-xs text-blue-800 font-mono">Email: admin@startrak.edu</p>
+              <p className="text-xs text-blue-800 font-mono">Password: admin123</p>
             </p>
+            <div className="mt-2 text-xs text-blue-700">
+              <p><strong>⚠️ Important:</strong> Make sure "Auto Confirm User" is enabled when creating the user!</p>
+            </div>
           </div>
         </div>
 

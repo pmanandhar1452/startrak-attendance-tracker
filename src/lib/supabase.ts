@@ -24,13 +24,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 if (!hasValidCredentials && isDevelopment) {
-  console.warn('⚠️  Using placeholder Supabase credentials. Please update your .env file with real Supabase credentials.');
+  console.warn('⚠️  SETUP REQUIRED: Using placeholder Supabase credentials.');
   console.warn('📝 Instructions:');
-  console.warn('1. Go to https://supabase.com/dashboard');
-  console.warn('2. Select your project');
-  console.warn('3. Go to Settings → API');
-  console.warn('4. Copy your Project URL and anon/public key');
-  console.warn('5. Update VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file');
+  console.warn('1. 🔗 Go to https://supabase.com/dashboard');
+  console.warn('2. 📁 Select your project (or create one)');
+  console.warn('3. ⚙️  Go to Settings → API');
+  console.warn('4. 📋 Copy your Project URL and anon/public key');
+  console.warn('5. 📝 Update .env file with your real credentials');
+  console.warn('6. 👤 Create your first admin user in Authentication → Users');
+  console.warn('7. 🔄 Restart the dev server');
 }
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);

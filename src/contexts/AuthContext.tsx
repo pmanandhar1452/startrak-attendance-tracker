@@ -70,7 +70,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (networkError instanceof TypeError && networkError.message.includes('Failed to fetch')) {
         return { 
           error: { 
-            message: 'Unable to connect to authentication service. Please check your internet connection and Supabase configuration.',
+            message: 'Unable to connect to Supabase. Please check your .env file has the correct VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY values.',
             name: 'ConnectionError'
           } as any
         };
