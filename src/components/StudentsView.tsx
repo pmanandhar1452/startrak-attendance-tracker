@@ -104,6 +104,27 @@ export default function StudentsView({
 
   const { user } = useAuth();
   const isAdmin = user?.user_metadata?.role === 'admin' || user?.email?.includes('admin');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    studentId: '',
+    email: '',
+    level: 'Beginner' as const,
+    subject: '',
+    program: '',
+    contactNumber: '',
+    emergencyContact: '',
+    status: 'active' as const,
+    notes: '',
+    enrollmentDate: new Date().toISOString().split('T')[0]
+  });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const { user } = useAuth();
+  const isAdmin = user?.user_metadata?.role === 'admin' || user?.email?.includes('admin');
   const [idError, setIdError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
