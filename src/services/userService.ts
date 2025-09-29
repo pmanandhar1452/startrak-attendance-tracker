@@ -731,6 +731,3 @@ export class UserService {
     };
   }
 }
-    }
-  }
-}
