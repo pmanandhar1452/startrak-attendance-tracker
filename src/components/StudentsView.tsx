@@ -516,6 +516,8 @@ export default function StudentsView({
   // Reset form when modal closes
   const handleCloseAddForm = () => {
     setShowAddForm(false);
+    setValidationErrors({});
+    setScheduleErrors({});
     setAddFormData({
       name: '',
       studentId: '',
@@ -525,7 +527,8 @@ export default function StudentsView({
       program: '',
       contactNumber: '',
       emergencyContact: '',
-      notes: ''
+      notes: '',
+      schedule: {}
     });
     setFormErrors({});
     setSubmitError(null);
