@@ -80,7 +80,6 @@ export default function StudentsView({
   const [generatedCards, setGeneratedCards] = useState<IDCardTemplate[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState({
