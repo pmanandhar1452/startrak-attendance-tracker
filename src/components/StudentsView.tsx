@@ -449,48 +449,6 @@ export default function StudentsView({
     return Object.keys(errors).length === 0;
   };
 
-  // Handle form submission
-  const handleAddStudent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    setSubmitError(null);
-    setSubmitSuccess(null);
-
-    try {
-      const newStudent: Omit<Student, 'id'> = {
-        name: addFormData.name.trim(),
-        studentId: addFormData.studentId.trim(),
-        email: addFormData.email.trim().toLowerCase(),
-        level: addFormData.level,
-        subject: addFormData.subject.trim(),
-        program: addFormData.program.trim() || undefined,
-        contactNumber: addFormData.contactNumber.trim() || undefined,
-        emergencyContact: addFormData.emergencyContact.trim() || undefined,
-        notes: addFormData.notes.trim() || undefined,
-        schedule: {}, // Empty schedule initially
-        enrollmentDate: new Date().toISOString().split('T')[0], // Current date
-        status: 'active'
-      };
-
-      await addStudent(newStudent);
-      
-      // Reset form
-      setAddFormData({
-        name: '',
-        studentId: '',
-        email: '',
-        level: 'Beginner',
-        subject: '',
-        program: '',
-        contactNumber: '',
-        emergencyContact: '',
-        notes: ''
-      });
       setFormErrors({});
       setShowAddForm(false);
       setSubmitSuccess(`Student "${newStudent.name}" added successfully!`);
