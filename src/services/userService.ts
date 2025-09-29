@@ -149,15 +149,30 @@ export class UserService {
         throw new Error('Failed to create user');
       }
 
-      // Step 2: Get role ID
-      const { data: roleData, error: roleError } = await supabase
+      // Step 2: Get or create role
+      let roleData;
+      const { data: existingRole, error: roleError } = await supabase
         .from('roles')
-        .select('id')
+        .select('id, role_name')
         .eq('role_name', request.role)
         .single();
 
-      if (roleError) {
+      if (roleError && roleError.code === 'PGRST116') {
+        // Role doesn't exist, create it
+        const { data: newRole, error: createRoleError } = await supabase
+          .from('roles')
+          .insert({ role_name: request.role })
+          .select('id, role_name')
+          .single();
+        
+        if (createRoleError) {
+          throw new Error(`Failed to create role: ${createRoleError.message}`);
+        }
+        roleData = newRole;
+      } else if (roleError) {
         throw new Error(`Failed to find role: ${roleError.message}`);
+      } else {
+        roleData = existingRole;
       }
 
       // Step 3: Create/update user profile
@@ -176,7 +191,7 @@ export class UserService {
       let parent: Parent | undefined;
 
       // Step 4: If creating a parent, create parent record and link to students
-      if (request.role === 'parent') {
+      if (roleData.role_name === 'parent') {
         parent = await this.createParentRecord(authData.user.id, request);
       }
 
@@ -188,11 +203,11 @@ export class UserService {
   }
 
   private static async createMockUserProfile(user: any, request: CreateUserRequest): Promise<{ user: any; parent?: Parent }> {
-    // Get or create role
+    // Get or create role from Supabase
     let roleData;
     const { data: existingRole, error: roleError } = await supabase
       .from('roles')
-      .select('id')
+      .select('id, role_name')
       .eq('role_name', request.role)
       .single();
 
@@ -201,7 +216,7 @@ export class UserService {
       const { data: newRole, error: createRoleError } = await supabase
         .from('roles')
         .insert({ role_name: request.role })
-        .select('id')
+        .select('id, role_name')
         .single();
       
       if (createRoleError) {
@@ -232,7 +247,7 @@ export class UserService {
     let parent: Parent | undefined;
 
     // If creating a parent, create parent record
-    if (request.role === 'parent') {
+    if (roleData.role_name === 'parent') {
       parent = await this.createParentRecord(user.id, request);
     }
 
