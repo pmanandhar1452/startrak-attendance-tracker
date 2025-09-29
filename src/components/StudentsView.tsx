@@ -129,8 +129,7 @@ export default function StudentsView({
   const uniqueSubjects = [...new Set(students.map(s => s.subject))];
 
   // Filter and sort students
-  const filteredAndSortedStudents = students
-    .filter(student => {
+  let filteredStudents = students.filter(student => {
       const matchesSearch = searchTerm === '' || 
         student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -142,8 +141,18 @@ export default function StudentsView({
       const matchesStatus = statusFilter === '' || student.status === statusFilter;
       
       return matchesSearch && matchesLevel && matchesSubject && matchesStatus;
-    })
-    .sort((a, b) => {
+    });
+
+  // Apply additional filters
+  if (statusFilter) {
+    filteredStudents = filteredStudents.filter(student => student.status === statusFilter);
+  }
+  if (levelFilter) {
+    filteredStudents = filteredStudents.filter(student => student.level === levelFilter);
+  }
+
+  // Sort students
+  const filteredAndSortedStudents = [...filteredStudents].sort((a, b) => {
       let aValue: any = a[sortField];
       let bValue: any = b[sortField];
       
@@ -313,6 +322,11 @@ export default function StudentsView({
 
   const getStudentQRCode = (studentId: string) => {
     return qrCodes.find(qr => qr.studentId === studentId);
+  };
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   // Reset pagination when filters change
@@ -527,6 +541,16 @@ export default function StudentsView({
             <p className="text-green-800 font-medium">Success</p>
           </div>
           <p className="text-green-700 mt-1">{successMessage}</p>
+        </div>
+      )}
+
+      {idError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="h-5 w-5 text-red-600" />
+            <p className="text-red-800 font-medium">Error</p>
+          </div>
+          <p className="text-red-700 mt-1">{idError}</p>
         </div>
       )}
 
