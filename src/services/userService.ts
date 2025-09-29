@@ -145,12 +145,7 @@ export class UserService {
       // Fetch all user profiles with their roles
       let query = supabase
         .from('user_profiles')
-        .select(`
-          *,
-          roles (
-            id,
-            role_name
-        `, { count: 'exact' })
+        .select('*, roles(id, role_name)', { count: 'exact' })
         .order('created_at', { ascending: false });
       
       // Apply pagination
