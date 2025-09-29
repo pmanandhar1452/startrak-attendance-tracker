@@ -4,6 +4,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 import StudentsView from './components/StudentsView';
+import AttendanceView from './components/AttendanceView';
+import SessionsView from './components/SessionsView';
 import UserManagementView from './components/UserManagementView';
 import QRScannerPage from './components/QRScannerPage';
 import AuditLogsView from './components/AuditLogsView';
@@ -52,10 +54,21 @@ function App() {
           <StudentsView 
             studentId={activeView.params?.studentId}
             onBackToUserManagement={activeView.params?.studentId ? handleBackToUserManagement : undefined}
+          />
+        );
+      case 'attendance':
+        return (
+          <AttendanceView 
             attendanceRecords={attendanceRecords}
             students={students}
             sessions={sessions}
             onUpdateAttendance={updateAttendanceRecord}
+          />
+        );
+      case 'sessions':
+        return (
+          <SessionsView 
+            sessions={sessions}
             onAddSession={addSession}
             onUpdateSession={updateSession}
             onDeleteSession={deleteSession}
