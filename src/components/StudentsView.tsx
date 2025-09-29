@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Search, Filter, ChevronUp, ChevronDown, CreditCard as Edit3, Trash2, Eye, ChevronLeft, ChevronRight, CreditCard, QrCode, Download, Printer, CheckSquare, Square, AlertCircle, CheckCircle, Loader, Clock, BookOpen, GraduationCap } from 'lucide-react';
+import { Users, Plus, Search, Filter, ChevronUp, ChevronDown, CreditCard as Edit3, Trash2, Eye, ChevronLeft, ChevronRight, CreditCard, QrCode, Download, Printer, CheckSquare, Square, AlertCircle, CheckCircle, Loader, Clock, BookOpen, GraduationCap, X } from 'lucide-react';
 import { Student, IDCardTemplate, AttendanceRecord, Session } from '../types';
 import { useStudents } from '../hooks/useStudents';
 import { useIDCards } from '../hooks/useIDCards';
+import { useAuth } from '../contexts/AuthContext';
 import AttendanceView from './AttendanceView';
 import SessionsView from './SessionsView';
 
@@ -32,6 +33,7 @@ export default function StudentsView({
   onUpdateSession,
   onDeleteSession
 }: StudentsViewProps) {
+  const { user } = useAuth();
   const { students: hookStudents, loading, error, addStudent, updateStudent, deleteStudent, fetchStudentById } = useStudents();
   const { qrCodes, generateQRCode, generateIDCard, batchGenerateIDCards, deleteQRCode } = useIDCards();
   
@@ -55,6 +57,25 @@ export default function StudentsView({
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+  
+  // Add Student Form Data
+  const [addFormData, setAddFormData] = useState({
+    name: '',
+    studentId: '',
+    email: '',
+    level: 'Beginner' as 'Beginner' | 'Intermediate' | 'Advanced',
+    subject: '',
+    program: '',
+    contactNumber: '',
+    emergencyContact: '',
+    notes: ''
+  });
+
+  // Form validation errors
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   
   // ID Management state
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
@@ -74,6 +95,20 @@ export default function StudentsView({
     }
   }, [studentId, fetchStudentById]);
 
+  // Clear messages after 5 seconds
+  useEffect(() => {
+    if (submitSuccess) {
+      const timer = setTimeout(() => setSubmitSuccess(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [submitSuccess]);
+
+  useEffect(() => {
+    if (submitError) {
+      const timer = setTimeout(() => setSubmitError(null), 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [submitError]);
   // Get unique values for filters
   const uniqueLevels = [...new Set(students.map(s => s.level))];
   const uniqueSubjects = [...new Set(students.map(s => s.subject))];
@@ -265,6 +300,123 @@ export default function StudentsView({
     return qrCodes.find(qr => qr.studentId === studentId);
   };
 
+  // Check if user is admin
+  const isAdmin = user?.user_metadata?.role === 'admin' || user?.app_metadata?.role === 'admin';
+
+  // Validate form data
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+
+    // Required fields
+    if (!addFormData.name.trim()) {
+      errors.name = 'Full name is required';
+    }
+
+    if (!addFormData.studentId.trim()) {
+      errors.studentId = 'Student ID is required';
+    }
+
+    if (!addFormData.email.trim()) {
+      errors.email = 'Email is required';
+    } else {
+      // Email format validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(addFormData.email)) {
+        errors.email = 'Please enter a valid email address';
+      }
+    }
+
+    if (!addFormData.subject.trim()) {
+      errors.subject = 'Subject is required';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Handle form submission
+  const handleAddStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+    setSubmitSuccess(null);
+
+    try {
+      const newStudent: Omit<Student, 'id'> = {
+        name: addFormData.name.trim(),
+        studentId: addFormData.studentId.trim(),
+        email: addFormData.email.trim().toLowerCase(),
+        level: addFormData.level,
+        subject: addFormData.subject.trim(),
+        program: addFormData.program.trim() || undefined,
+        contactNumber: addFormData.contactNumber.trim() || undefined,
+        emergencyContact: addFormData.emergencyContact.trim() || undefined,
+        notes: addFormData.notes.trim() || undefined,
+        schedule: {}, // Empty schedule initially
+        enrollmentDate: new Date().toISOString().split('T')[0], // Current date
+        status: 'active'
+      };
+
+      await addStudent(newStudent);
+      
+      // Reset form
+      setAddFormData({
+        name: '',
+        studentId: '',
+        email: '',
+        level: 'Beginner',
+        subject: '',
+        program: '',
+        contactNumber: '',
+        emergencyContact: '',
+        notes: ''
+      });
+      setFormErrors({});
+      setShowAddForm(false);
+      setSubmitSuccess(`Student "${newStudent.name}" added successfully!`);
+      
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add student';
+      
+      // Handle specific error cases
+      if (errorMessage.includes('duplicate') || errorMessage.includes('unique')) {
+        if (errorMessage.includes('email')) {
+          setSubmitError('A student with this email address already exists.');
+        } else if (errorMessage.includes('student_id')) {
+          setSubmitError('A student with this Student ID already exists.');
+        } else {
+          setSubmitError('A student with this information already exists.');
+        }
+      } else {
+        setSubmitError(errorMessage);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Reset form when modal closes
+  const handleCloseAddForm = () => {
+    setShowAddForm(false);
+    setAddFormData({
+      name: '',
+      studentId: '',
+      email: '',
+      level: 'Beginner',
+      subject: '',
+      program: '',
+      contactNumber: '',
+      emergencyContact: '',
+      notes: ''
+    });
+    setFormErrors({});
+    setSubmitError(null);
+  };
   // If viewing single student
   if (selectedStudent) {
     return (
@@ -331,6 +483,26 @@ export default function StudentsView({
       </div>
 
       {/* Success/Error Messages */}
+      {submitSuccess && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-center space-x-2">
+            <CheckCircle className="h-5 w-5 text-green-600" />
+            <p className="text-green-800 font-medium">Success</p>
+          </div>
+          <p className="text-green-700 mt-1">{submitSuccess}</p>
+        </div>
+      )}
+
+      {(error || idError || submitError) && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="h-5 w-5 text-red-600" />
+            <p className="text-red-800 font-medium">Error</p>
+          </div>
+          <p className="text-red-700 mt-1">{error || idError || submitError}</p>
+        </div>
+      )}
+
       {successMessage && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <div className="flex items-center space-x-2">
@@ -341,13 +513,13 @@ export default function StudentsView({
         </div>
       )}
 
-      {(error || idError) && (
+      {idError && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex items-center space-x-2">
             <AlertCircle className="h-5 w-5 text-red-600" />
             <p className="text-red-800 font-medium">Error</p>
           </div>
-          <p className="text-red-700 mt-1">{error || idError}</p>
+          <p className="text-red-700 mt-1">{idError}</p>
         </div>
       )}
 
@@ -418,13 +590,15 @@ export default function StudentsView({
               <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold text-gray-900">Students</h2>
-                  <button
-                    onClick={() => setShowAddForm(true)}
-                    className="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Add Student</span>
-                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={() => setShowAddForm(true)}
+                      className="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Add Student</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Filters Grid */}
@@ -893,6 +1067,217 @@ export default function StudentsView({
           )}
         </div>
       </div>
+
+      {/* Add Student Modal */}
+      {showAddForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">Add New Student</h2>
+                <button
+                  onClick={handleCloseAddForm}
+                  disabled={isSubmitting}
+                  className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <form onSubmit={handleAddStudent} className="space-y-6">
+                {/* Required Fields Section */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Required Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={addFormData.name}
+                        onChange={(e) => setAddFormData({ ...addFormData, name: e.target.value })}
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                          formErrors.name ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        placeholder="Enter student's full name"
+                        disabled={isSubmitting}
+                      />
+                      {formErrors.name && (
+                        <p className="text-red-600 text-sm mt-1">{formErrors.name}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Student ID *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={addFormData.studentId}
+                        onChange={(e) => setAddFormData({ ...addFormData, studentId: e.target.value })}
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                          formErrors.studentId ? 'border-red-300' : 'border-gray-300'
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Email Address *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={addFormData.email}
+                        onChange={(e) => setAddFormData({ ...addFormData, email: e.target.value })}
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                          formErrors.email ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        placeholder="student@example.com"
+                        disabled={isSubmitting}
+                      />
+                      {formErrors.email && (
+                        <p className="text-red-600 text-sm mt-1">{formErrors.email}</p>
+                      )}
+                    </div>
+                        }`}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Level *
+                      </label>
+                      <select
+                        required
+                        value={addFormData.level}
+                        onChange={(e) => setAddFormData({ ...addFormData, level: e.target.value as any })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        disabled={isSubmitting}
+                      >
+                        <option value="Beginner">Beginner</option>
+                        <option value="Intermediate">Intermediate</option>
+                        <option value="Advanced">Advanced</option>
+                      </select>
+                    </div>
+                        placeholder="e.g., STU001"
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Subject *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={addFormData.subject}
+                        onChange={(e) => setAddFormData({ ...addFormData, subject: e.target.value })}
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                          formErrors.subject ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        placeholder="e.g., Computer Science, Mathematics"
+                        disabled={isSubmitting}
+                      />
+                      {formErrors.subject && (
+                        <p className="text-red-600 text-sm mt-1">{formErrors.subject}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                        disabled={isSubmitting}
+                {/* Optional Fields Section */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Additional Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Program
+                      </label>
+                      <input
+                        type="text"
+                        value={addFormData.program}
+                        onChange={(e) => setAddFormData({ ...addFormData, program: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="e.g., Full Stack Development"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                      />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Contact Number
+                      </label>
+                      <input
+                        type="tel"
+                        value={addFormData.contactNumber}
+                        onChange={(e) => setAddFormData({ ...addFormData, contactNumber: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="+1-555-0123"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                      {formErrors.studentId && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Emergency Contact
+                      </label>
+                      <input
+                        type="tel"
+                        value={addFormData.emergencyContact}
+                        onChange={(e) => setAddFormData({ ...addFormData, emergencyContact: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="+1-555-0456"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                        <p className="text-red-600 text-sm mt-1">{formErrors.studentId}</p>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Notes
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={addFormData.notes}
+                        onChange={(e) => setAddFormData({ ...addFormData, notes: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Any additional notes..."
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+                </div>
+                      )}
+                {/* Auto-populated Fields Info */}
+                <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                  <h4 className="text-sm font-medium text-blue-900 mb-2">Automatic Settings</h4>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• <strong>Status:</strong> Will be set to "Active"</li>
+                    <li>• <strong>Enrollment Date:</strong> Will be set to today's date</li>
+                    <li>• <strong>Schedule:</strong> Can be configured after creation</li>
+                  </ul>
+                </div>
+                    </div>
+                <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={handleCloseAddForm}
+                    disabled={isSubmitting}
+                    className="bg-gray-200 text-gray-800 font-medium py-2 px-6 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="bg-blue-600 text-white font-medium py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    {isSubmitting && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    )}
+                    <span>{isSubmitting ? 'Adding Student...' : 'Add Student'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

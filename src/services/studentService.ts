@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { Student, WeeklySchedule, TimeSlot } from '../types';
 import { Database } from '../lib/database.types';
+import { UserService } from './userService';
 
 type StudentRow = Database['public']['Tables']['students']['Row'];
 type StudentInsert = Database['public']['Tables']['students']['Insert'];
@@ -57,8 +58,6 @@ export class StudentService {
     // Check for conflicts in the schedule
     await this.validateScheduleConflicts(student.schedule);
 
-    // Check for conflicts in the schedule
-    await this.validateScheduleConflicts(student.schedule);
 
     const studentInsert: StudentInsert = {
       name: student.name,
@@ -82,12 +81,41 @@ export class StudentService {
       .single();
 
     if (studentError) {
+      // Handle specific constraint violations
+      if (studentError.code === '23505') { // Unique constraint violation
+        if (studentError.message.includes('students_email_key')) {
+          throw new Error('A student with this email address already exists.');
+        } else if (studentError.message.includes('students_student_id_key')) {
+          throw new Error('A student with this Student ID already exists.');
+        } else {
+          throw new Error('A student with this information already exists.');
+        }
+      }
       throw new Error(`Failed to create student: ${studentError.message}`);
     }
 
     // Insert schedule data
     await this.updateStudentSchedule(studentData.id, student.schedule);
 
+    // Create audit log
+    try {
+      await UserService.createAuditLog(
+        'students',
+        studentData.id,
+        'INSERT',
+        null,
+        {
+          name: studentData.name,
+          student_id: studentData.student_id,
+          email: studentData.email,
+          level: studentData.level,
+          subject: studentData.subject,
+          status: studentData.status
+        }
+      );
+    } catch (auditError) {
+      console.warn('Failed to create audit log for student creation:', auditError);
+    }
     return await this.getStudentById(studentData.id) as Student;
   }
 
