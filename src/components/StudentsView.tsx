@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Search, Edit3, Trash2, Calendar, Clock, BookOpen, User, AlertCircle, CheckCircle, X, Mail, Phone, GraduationCap, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, QrCode, UserCheck, Filter } from 'lucide-react';
+import { Users, Plus, Search, CreditCard as Edit3, Trash2, Calendar, Clock, BookOpen, User, AlertCircle, CheckCircle, X, Mail, Phone, GraduationCap, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, QrCode, UserCheck, Filter } from 'lucide-react';
 import { Student, WeeklySchedule, TimeSlot } from '../types';
 import { useStudents } from '../hooks/useStudents';
 
