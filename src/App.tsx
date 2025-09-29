@@ -6,7 +6,6 @@ import Dashboard from './components/Dashboard';
 import AttendanceView from './components/AttendanceView';
 import StudentsView from './components/StudentsView';
 import SessionsView from './components/SessionsView';
-import ConsolidatedIDManagementView from './components/ConsolidatedIDManagementView';
 import UserManagementView from './components/UserManagementView';
 import QRScannerPage from './components/QRScannerPage';
 import AuditLogsView from './components/AuditLogsView';
@@ -87,8 +86,6 @@ function App() {
             onViewStudentDetails={handleViewStudentDetails}
           />
         );
-      case 'id-management':
-        return <ConsolidatedIDManagementView />;
       case 'qr-scanner':
         return <QRScannerPage onBack={() => handleViewChange('dashboard')} />;
       case 'audit-logs':

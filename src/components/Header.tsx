@@ -1,5 +1,5 @@
 import React from 'react';
-import { GraduationCap, Users, Clock, BarChart3, UserPlus, CreditCard, QrCode } from 'lucide-react';
+import { GraduationCap, Users, Clock, BarChart3, UserPlus, QrCode } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface HeaderProps {
@@ -15,7 +15,6 @@ export default function Header({ activeView, onViewChange }: HeaderProps) {
     { id: 'attendance', label: 'Attendance', icon: Clock },
     { id: 'students', label: 'Students', icon: Users },
     { id: 'sessions', label: 'Sessions', icon: GraduationCap },
-    { id: 'id-management', label: 'ID Management', icon: CreditCard },
     { id: 'qr-scanner', label: 'QR Check-In', icon: QrCode },
     { id: 'users', label: 'Users', icon: UserPlus },
   ];
