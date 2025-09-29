@@ -13,11 +13,109 @@ export class UserService {
       .select('*')
       .order('role_name');
 
-    if (error) {
-      throw new Error(`Failed to fetch roles: ${error.message}`);
-    }
+  static async getAllUsers(page = 1, pageSize = 10): Promise<{ data: Parent[]; count: number }> {
+    try {
+      console.log('UserService.getAllUsers called with:', { page, pageSize });
+      
+      let offset = 0;
+      let limit = pageSize;
+      
+      // Handle "All" case (pageSize = 0 or -1)
+      if (pageSize <= 0) {
+        offset = 0;
+        limit = 1000; // Set a reasonable upper limit
+      } else {
+        offset = (page - 1) * pageSize;
+        limit = pageSize;
+      }
+      
+      // Fetch all user profiles with their roles
+      let query = supabase
+        .from('user_profiles')
+        .select(`
+          *,
+          roles (
+            id,
+            role_name
+          )
+        `, { count: 'exact' })
+        .order('created_at', { ascending: false });
+      
+      // Apply pagination
+      if (pageSize > 0) {
+        query = query.range(offset, offset + limit - 1);
+      } else {
+        // For "All", still apply a reasonable limit to prevent performance issues
+        query = query.limit(limit);
+      }
+      
+      const { data: userProfilesData, error: userProfilesError, count } = await query;
 
+      if (userProfilesError) {
+        console.error('Supabase error fetching user profiles:', userProfilesError);
+        throw new Error(`Failed to fetch user profiles: ${userProfilesError.message}`);
+      }
+    if (error) {
+      if (!userProfilesData || userProfilesData.length === 0) {
+        console.log('No user profiles found');
+        return { data: [], count: 0 };
+      }
+      
+      console.log('Fetched user profiles:', userProfilesData.length);
+      throw new Error(`Failed to fetch roles: ${error.message}`);
+      // Get user IDs from user profiles
+      const userIds = userProfilesData.map(profile => profile.id);
+      
+      // Fetch parent records for users who have them
+      const { data: parentsData, error: parentsError } = await supabase
+        .from('parents')
+        .select('*')
+        .in('user_id', userIds);
+    }
+      if (parentsError) {
+        console.warn('Failed to fetch parent records:', parentsError.message);
+      }
+
+      // Fetch student links
+      const { data: linksData, error: linksError } = await supabase
+        .from('student_parent_link')
+        .select(`
+          parent_id,
+          student_id,
+          students (
+            id,
+            name,
+            student_id,
+            email,
+            level,
+            subject,
+            program,
+            avatar,
+            enrollment_date,
+            status
+          )
+        `);
     return data.map(this.mapRoleFromDB);
+      if (linksError) {
+        console.warn('Failed to fetch student links:', linksError.message);
+      }
+  }
+      // Map user profiles to Parent objects (including non-parent users)
+      const mappedUsers = userProfilesData.map(userProfile => 
+        this.mapUserProfileToParent(userProfile, parentsData || [], linksData || [])
+      );
+      
+      console.log('Mapped users:', mappedUsers.length);
+      
+      return {
+        data: mappedUsers,
+        count: count || 0
+      };
+    
+    } catch (error) {
+      console.error('Error in getAllUsers:', error);
+      throw error;
+    }
   }
 
   static async getAllParents(page = 1, pageSize = 10): Promise<{ data: Parent[]; count: number }> {
