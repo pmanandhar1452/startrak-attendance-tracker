@@ -18,7 +18,11 @@ export default function LoginPage() {
     try {
       const { error } = await signIn(email, password);
       if (error) {
-        setError(error.message);
+        if (error.name === 'ConnectionError') {
+          setError('Connection failed. Please check your Supabase configuration in the .env file.');
+        } else {
+          setError(error.message);
+        }
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');

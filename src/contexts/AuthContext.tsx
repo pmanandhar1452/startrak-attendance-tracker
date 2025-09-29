@@ -57,11 +57,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      return { error };
+    } catch (networkError) {
+      console.error('Network error during sign in:', networkError);
+      
+      // Check if it's a connection error
+      if (networkError instanceof TypeError && networkError.message.includes('Failed to fetch')) {
+        return { 
+          error: { 
+            message: 'Unable to connect to authentication service. Please check your internet connection and Supabase configuration.',
+            name: 'ConnectionError'
+          } as any
+        };
+      }
+      
+      return { 
+        error: { 
+          message: 'An unexpected error occurred during sign in. Please try again.',
+          name: 'UnknownError'
+        } as any
+      };
+    }
   };
 
   const signOut = async () => {
