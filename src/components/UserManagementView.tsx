@@ -29,6 +29,28 @@ export default function UserManagementView({
   const { parents, roles, totalCount, loading, error, createUser, linkParentToStudents, generateQRCode, deleteUser, fetchData } = useUsers();
   const { updateUser } = useUsers();
   const { students } = useStudents();
+  
+  console.log('UserManagementView render:', { 
+    parentsCount: parents.length, 
+    loading, 
+    error,
+    totalCount,
+    searchTerm,
+    filteredCount: parents.filter(user => {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        user.userProfile?.fullName?.toLowerCase().includes(searchLower) ||
+        user.id.toLowerCase().includes(searchLower) ||
+        user.qrCode?.toLowerCase().includes(searchLower) ||
+        user.userProfile?.roleName?.toLowerCase().includes(searchLower) ||
+        user.linkedStudents.some(student => 
+          student.name.toLowerCase().includes(searchLower) ||
+          student.studentId.toLowerCase().includes(searchLower)
+        )
+      );
+    }).length
+  });
+  
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showLinkForm, setShowLinkForm] = useState<Parent | null>(null);
   const [editingUser, setEditingUser] = useState<Parent | null>(null);
@@ -666,7 +688,7 @@ export default function UserManagementView({
                           className="text-purple-600 hover:text-purple-900 p-1 rounded hover:bg-purple-50"
                           title="Edit User"
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit3 className="h-4 w-4" />
                         </button>
                         {/* Only show parent-specific actions for parent role */}
                         {user.userProfile?.roleName === 'parent' && (
@@ -712,6 +734,10 @@ export default function UserManagementView({
           <div className="text-sm text-gray-500">
             {filteredParents.length} of {totalCount} {totalCount === 1 ? 'user' : 'users'}
             {searchTerm && ` matching "${searchTerm}"`}
+            {/* Debug info */}
+            <span className="ml-2 text-xs text-gray-400">
+              (Raw: {parents.length}, Filtered: {filteredParents.length}, Paginated: {paginatedUsers.length})
+            </span>
           </div>
         </div>
         

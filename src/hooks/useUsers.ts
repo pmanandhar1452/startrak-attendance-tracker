@@ -19,7 +19,7 @@ export function useUsers() {
       console.log('Fetching users data...', { page, pageSize });
       
       const [usersResult, rolesData] = await Promise.all([
-        UserService.getAllUsers(page, pageSize),
+        UserService.getAllParents(page, pageSize),
         UserService.getAllRoles(),
       ]);
       

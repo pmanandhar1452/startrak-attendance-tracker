@@ -150,8 +150,6 @@ export class UserService {
           roles (
             id,
             role_name
-          )
-        )
         `, { count: 'exact' })
         .order('created_at', { ascending: false });
       
@@ -188,6 +186,7 @@ export class UserService {
       if (parentsError) {
         console.warn('Failed to fetch parent records:', parentsError.message);
       }
+      
       // Fetch student links
       const { data: linksData, error: linksError } = await supabase
         .from('student_parent_link')
@@ -213,14 +212,14 @@ export class UserService {
       }
 
       // Map user profiles to Parent objects (including non-parent users)
-      const mappedParents = userProfilesData.map(userProfile => 
+      const mappedUsers = userProfilesData.map(userProfile => 
         this.mapUserProfileToParent(userProfile, parentsData || [], linksData || [])
       );
       
-      console.log('Mapped parents:', mappedParents.length);
+      console.log('Mapped users:', mappedUsers.length);
       
       return {
-        data: mappedParents,
+        data: mappedUsers,
         count: count || 0
       };
     
