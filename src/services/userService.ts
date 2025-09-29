@@ -22,6 +22,8 @@ export class UserService {
 
   static async getAllParents(page = 1, pageSize = 10): Promise<{ data: Parent[]; count: number }> {
     try {
+      console.log('Fetching users with pagination:', { page, pageSize });
+      
       let offset = 0;
       let limit = pageSize;
       
@@ -64,6 +66,8 @@ export class UserService {
       if (!userProfilesData) {
         return { data: [], count: 0 };
       }
+      
+      console.log('Fetched user profiles:', userProfilesData.length);
 
       // Get user IDs from user profiles
       const userIds = userProfilesData.map(profile => profile.id);
@@ -105,6 +109,8 @@ export class UserService {
       const mappedParents = userProfilesData.map(userProfile => 
         this.mapUserProfileToParent(userProfile, parentsData || [], linksData || [])
       );
+      
+      console.log('Mapped parents:', mappedParents.length);
       
       return {
         data: mappedParents,

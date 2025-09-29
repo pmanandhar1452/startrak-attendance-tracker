@@ -64,7 +64,7 @@ export default function UserManagementView({
   const [showConfirmation, setShowConfirmation] = useState(false);
 
   // Filter parents based on search term
-  const filteredUsers = parents.filter(user => {
+  const filteredParents = parents.filter(user => {
     const searchLower = searchTerm.toLowerCase();
     return (
       user.userProfile?.fullName?.toLowerCase().includes(searchLower) ||
@@ -79,9 +79,14 @@ export default function UserManagementView({
   });
 
   // Calculate pagination values
-  const totalPages = pageSize === -1 ? 1 : Math.ceil(totalCount / pageSize);
+  const totalPages = pageSize === -1 ? 1 : Math.ceil(filteredParents.length / pageSize);
   const startRecord = pageSize === -1 ? 1 : (currentPage - 1) * pageSize + 1;
-  const endRecord = pageSize === -1 ? totalCount : Math.min(currentPage * pageSize, totalCount);
+  const endRecord = pageSize === -1 ? filteredParents.length : Math.min(currentPage * pageSize, filteredParents.length);
+
+  // Get paginated users for display
+  const paginatedUsers = pageSize === -1 
+    ? filteredParents 
+    : filteredParents.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // Load data when pagination changes
   useEffect(() => {
@@ -486,7 +491,7 @@ export default function UserManagementView({
           </div>
         </div>
         
-        {filteredParents.length === 0 ? (
+        {paginatedUsers.length === 0 ? (
           <div className="text-center py-8">
             <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -522,7 +527,7 @@ export default function UserManagementView({
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredUsers.map((user) => (
+                {paginatedUsers.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -660,16 +665,16 @@ export default function UserManagementView({
         {/* User Count Display */}
         <div className="mt-4 flex justify-end">
           <div className="text-sm text-gray-500">
-            {filteredUsers.length} of {totalCount} {totalCount === 1 ? 'user' : 'users'}
+            {filteredParents.length} of {totalCount} {totalCount === 1 ? 'user' : 'users'}
             {searchTerm && ` matching "${searchTerm}"`}
           </div>
         </div>
         
         {/* Pagination Controls */}
-        {pageSize !== -1 && totalPages > 1 && (
+        {pageSize !== -1 && totalPages > 1 && filteredParents.length > 0 && (
           <div className="mt-6 flex items-center justify-between border-t border-gray-200 pt-4">
             <div className="text-sm text-gray-700">
-              Showing {startRecord} to {endRecord} of {totalCount} results
+              Showing {startRecord} to {endRecord} of {filteredParents.length} results
             </div>
             
             <div className="flex items-center space-x-2">

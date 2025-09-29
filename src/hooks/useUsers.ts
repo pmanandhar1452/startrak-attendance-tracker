@@ -16,7 +16,7 @@ export function useUsers() {
       setLoading(true);
       setError(null);
       
-      const [usersResult, rolesData] = await Promise.all([
+      const [usersResult, rolesData, adminCheck] = await Promise.all([
         UserService.getAllParents(page, pageSize),
         UserService.getAllRoles(),
         UserService.checkAdminPermission()
@@ -25,7 +25,7 @@ export function useUsers() {
       setParents(usersResult.data);
       setTotalCount(usersResult.count);
       setRoles(rolesData);
-      setIsAdmin(usersResult.isAdmin || false);
+      setIsAdmin(adminCheck || false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch user data');
       console.error('Error fetching user data:', err);
