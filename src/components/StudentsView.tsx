@@ -1,26 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Users, 
-  Plus, 
-  Search, 
-  Filter, 
-  ChevronUp, 
-  ChevronDown, 
-  Edit3, 
-  Trash2, 
-  Eye,
-  ChevronLeft,
-  ChevronRight,
-  CreditCard,
-  QrCode,
-  Download,
-  Printer,
-  CheckSquare,
-  Square,
-  AlertCircle,
-  CheckCircle,
-  Loader
-} from 'lucide-react';
+import { Users, Plus, Search, Filter, ChevronUp, ChevronDown, CreditCard as Edit3, Trash2, Eye, ChevronLeft, ChevronRight, CreditCard, QrCode, Download, Printer, CheckSquare, Square, AlertCircle, CheckCircle, Loader } from 'lucide-react';
 import { Student, IDCardTemplate } from '../types';
 import { useStudents } from '../hooks/useStudents';
 import { useIDCards } from '../hooks/useIDCards';
