@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Search, CreditCard as Edit3, Trash2, Eye, Calendar, Mail, Phone, MapPin, BookOpen, GraduationCap, UserPlus, X, AlertCircle, CheckCircle, Clock, QrCode, CreditCard, Download, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, Plus, Search, CreditCard as Edit3, Trash2, Eye, Calendar, Mail, Phone, MapPin, BookOpen, GraduationCap, UserPlus, X, AlertCircle, CheckCircle, Clock, QrCode, CreditCard, Download, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Filter, Square, CheckSquare, Loader, Printer } from 'lucide-react';
 import { Student, IDCardTemplate, AttendanceRecord, Session } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { useStudents } from '../hooks/useStudents';
+import { useIDCards } from '../hooks/useIDCards';
 import AttendanceView from './AttendanceView';
 import SessionsView from './SessionsView';
 
@@ -79,7 +81,6 @@ export default function StudentsView({
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [generatedCards, setGeneratedCards] = useState<IDCardTemplate[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -95,36 +96,8 @@ export default function StudentsView({
     enrollmentDate: new Date().toISOString().split('T')[0]
   });
 
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-  // Table state
-  const [sortField, setSortField] = useState<keyof Student>('name');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [levelFilter, setLevelFilter] = useState<string>('');
-
-    name: '',
-    studentId: '',
-    email: '',
-    level: 'Beginner' as const,
-    subject: '',
-    program: '',
-    contactNumber: '',
-    emergencyContact: '',
-    status: 'active' as const,
-    notes: '',
-    enrollmentDate: new Date().toISOString().split('T')[0]
-  });
-
-  const { user } = useAuth();
   const isAdmin = user?.user_metadata?.role === 'admin' || user?.email?.includes('admin');
   const [idError, setIdError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Single student view
   useEffect(() => {
@@ -342,53 +315,6 @@ export default function StudentsView({
     return qrCodes.find(qr => qr.studentId === studentId);
   };
 
-  // Check if user is admin
-  const isAdmin = user?.user_metadata?.role === 'admin' || user?.app_metadata?.role === 'admin';
-
-  // Apply additional filters
-  if (statusFilter) {
-    filteredStudents = filteredStudents.filter(student => student.status === statusFilter);
-  }
-  if (levelFilter) {
-    filteredStudents = filteredStudents.filter(student => student.level === levelFilter);
-  }
-
-  // Sort students
-  const sortedStudents = [...filteredStudents].sort((a, b) => {
-    const aValue = a[sortField];
-    const bValue = b[sortField];
-    
-    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-    return 0;
-  });
-
-  // Pagination
-  const totalPages = Math.ceil(sortedStudents.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const paginatedStudents = sortedStudents.slice(startIndex, startIndex + pageSize);
-
-  // Handle sorting
-  const handleSort = (field: keyof Student) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
-
-  // Get sort icon
-  const getSortIcon = (field: keyof Student) => {
-    if (sortField !== field) return null;
-    return sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
-  };
-
-  // Handle page change
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
   // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
@@ -601,16 +527,6 @@ export default function StudentsView({
             <p className="text-green-800 font-medium">Success</p>
           </div>
           <p className="text-green-700 mt-1">{successMessage}</p>
-        </div>
-      )}
-
-      {idError && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center space-x-2">
-            <AlertCircle className="h-5 w-5 text-red-600" />
-            <p className="text-red-800 font-medium">Error</p>
-          </div>
-          <p className="text-red-700 mt-1">{idError}</p>
         </div>
       )}
 
@@ -1374,7 +1290,7 @@ export default function StudentsView({
                   </button>
                 </div>
               </form>
-  let filteredStudents = students.filter(student =>
+            </div>
           </div>
         </div>
       )}
