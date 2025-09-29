@@ -526,6 +526,103 @@ export default function UserManagementView({
           </div>
         </div>
       )}
+
+      {/* Edit User Modal */}
+      {editingUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Edit User: {editingUser.userProfile?.fullName}
+                </h2>
+                <button
+                  onClick={cancelEdit}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <form onSubmit={handleEditUser} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editFormData.fullName}
+                      onChange={(e) => setEditFormData({ ...editFormData, fullName: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+                    <select
+                      required
+                      value={editFormData.roleId}
+                      onChange={(e) => setEditFormData({ ...editFormData, roleId: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Select a role...</option>
+                      {roles.map((role) => (
+                        <option key={role.id} value={role.id}>
+                          {role.roleName.charAt(0).toUpperCase() + role.roleName.slice(1)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Show student linking for parent role */}
+                {roles.find(r => r.id === editFormData.roleId)?.roleName === 'parent' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Linked Students</label>
+                    <MultiSelectDropdown
+                      options={students.map(student => ({
+                        id: student.id,
+                        label: student.name,
+                        sublabel: `${student.studentId} • ${student.subject}`
+                      }))}
+                      selectedValues={editFormData.linkedStudentIds}
+                      onChange={(selectedIds) => setEditFormData({ ...editFormData, linkedStudentIds: selectedIds })}
+                      placeholder="Select students to link..."
+                      searchPlaceholder="Search students..."
+                      className="w-full"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                )}
+
+                <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={cancelEdit}
+                    disabled={isSubmitting}
+                    className="bg-gray-200 text-gray-800 font-medium py-2 px-6 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="bg-blue-600 text-white font-medium py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    {isSubmitting && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    )}
+                    <span>Update User</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Parents List */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
