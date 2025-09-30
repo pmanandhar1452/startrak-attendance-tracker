@@ -107,6 +107,10 @@ function App() {
             searchTerm={userManagementState.searchTerm}
             currentPage={userManagementState.currentPage}
             pageSize={userManagementState.pageSize}
+            onSearchChange={(searchTerm) => setUserManagementState(prev => ({ ...prev, searchTerm }))}
+            onPageChange={(page) => setUserManagementState(prev => ({ ...prev, currentPage: page }))}
+            onPageSizeChange={(pageSize) => setUserManagementState(prev => ({ ...prev, pageSize }))}
+            onViewStudentDetails={handleViewStudentDetails}
           />
         );
       case 'qr-scanner':
@@ -114,7 +118,20 @@ function App() {
       case 'audit-logs':
         return <AuditLogsView />;
       case 'id-management':
-        return <div>ID Management Placeholder</div>;
+        return (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+            <div className="max-w-md mx-auto">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V4a2 2 0 114 0v2m-4 0a2 2 0 104 0m-4 0v2m0 0h4" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">ID Management</h2>
+              <p className="text-gray-600 mb-4">Generate and manage student ID cards, QR codes, and access cards.</p>
+              <p className="text-sm text-gray-500">This feature is coming soon.</p>
+            </div>
+          </div>
+        );
       default:
         return (
           <Dashboard
