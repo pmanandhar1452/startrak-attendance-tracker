@@ -109,4 +109,4 @@ function App() {
             currentPage={userManagementState.currentPage}
             pageSize={userManagementState.pageSize}
             />
-        );
+        )
