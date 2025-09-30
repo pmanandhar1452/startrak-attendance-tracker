@@ -14,21 +14,6 @@ import { useStudents } from './hooks/useStudents';
 import { useSessions } from './hooks/useSessions';
 import { useAttendance } from './hooks/useAttendance';
 
-  export default function TestFetch() {
-  useEffect(() => {
-    async function fetchData() {
-      const { data, error } = await supabase.from('students').select('*');
-      console.log('Students data:', data);
-      console.log('Error (should be null):', error);
-    }
-
-    fetchData();
-  }, []);
-
-  return <div>Check the console for students data</div>;
-}
-
-
 function App() {
   const [activeView, setActiveView] = useState<{ name: string; params?: any }>({ name: 'dashboard' });
 
