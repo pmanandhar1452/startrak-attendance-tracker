@@ -17,6 +17,17 @@ import { useAttendance } from './hooks/useAttendance';
 function App() {
   const [activeView, setActiveView] = useState<{ name: string; params?: any }>({ name: 'dashboard' });
 
+  useEffect(() => {
+  async function testFetch() {
+    const { data, error } = await supabase.from('students').select('*');
+    console.log('Students data:', data);
+    console.log('Error:', error);
+  }
+
+  testFetch();
+}, []);
+
+  
   // User Management state preservation
   const [userManagementState, setUserManagementState] = useState({
     searchTerm: '',
