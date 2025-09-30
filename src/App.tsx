@@ -20,19 +20,30 @@ function App() {
   // 🔹 DEBUG CODE: runs once on load
   useEffect(() => {
     async function debug() {
+      // 1. Check if logged in
       const { data: user, error: userErr } = await supabase.auth.getUser();
       console.log("🔑 Logged in user:", user, "err:", userErr);
 
-      const { data: roles, error: rolesErr } = await supabase.from('roles').select('*').limit(5);
+      // 2. Try fetching roles
+      const { data: roles, error: rolesErr } = await supabase
+        .from('roles')
+        .select('*')
+        .limit(5);
       console.log("📋 Roles test:", rolesErr || roles);
 
-      const { data: students, error: studentsErr } = await supabase.from('students').select('*').limit(5);
+      // 3. Try fetching students
+      const { data: students, error: studentsErr } = await supabase
+        .from('students')
+        .select('*')
+        .limit(5);
       console.log("👩‍🎓 Students test:", studentsErr || students);
     }
 
     debug();
   }, []);
+  // 🔹 END DEBUG
 
+  // User Management state preservation
   const [userManagementState, setUserManagementState] = useState({
     searchTerm: '',
     currentPage: 1,
@@ -58,7 +69,13 @@ function App() {
   const renderView = () => {
     switch (activeView.name) {
       case 'dashboard':
-        return <Dashboard attendanceRecords={attendanceRecords} students={students} sessions={sessions} />;
+        return (
+          <Dashboard
+            attendanceRecords={attendanceRecords}
+            students={students}
+            sessions={sessions}
+          />
+        );
       case 'students':
         return (
           <StudentsView
@@ -99,7 +116,13 @@ function App() {
       case 'id-management':
         return <div>ID Management Placeholder</div>;
       default:
-        return <Dashboard attendanceRecords={attendanceRecords} students={students} sessions={sessions} />;
+        return (
+          <Dashboard
+            attendanceRecords={attendanceRecords}
+            students={students}
+            sessions={sessions}
+          />
+        );
     }
   };
 
