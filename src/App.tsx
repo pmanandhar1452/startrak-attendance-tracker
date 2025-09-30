@@ -94,3 +94,21 @@ function App() {
         return (
           <UserManagementView 
             searchTerm={userManagementState.searchTerm}
+            currentPage={userManagementState.currentPage}
+            pageSize={userManagementState.pageSize}
+          />
+        );
+      default:
+        return <Dashboard attendanceRecords={attendanceRecords} students={students} sessions={sessions} />;
+    }
+  };
+
+  return (
+    <AuthProvider>
+      <Header onChangeView={handleViewChange} />
+      {renderView()}
+    </AuthProvider>
+  );
+}
+
+export default App;
