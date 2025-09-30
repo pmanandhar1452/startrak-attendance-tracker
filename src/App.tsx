@@ -107,4 +107,4 @@ function App() {
           <UserManagementView 
             searchTerm={userManagementState.searchTerm}
             currentPage={userManagementState.currentPage}
-            pageSize={use
+            pageSize={userManagementState.pageSize}
