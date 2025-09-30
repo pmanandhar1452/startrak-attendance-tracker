@@ -58,23 +58,17 @@ function App() {
   const renderView = () => {
     switch (activeView.name) {
       case 'dashboard':
-        return (
-          <Dashboard 
-            attendanceRecords={attendanceRecords}
-            students={students}
-            sessions={sessions}
-          />
-        );
+        return <Dashboard attendanceRecords={attendanceRecords} students={students} sessions={sessions} />;
       case 'students':
         return (
-          <StudentsView 
+          <StudentsView
             studentId={activeView.params?.studentId}
             onBackToUserManagement={activeView.params?.studentId ? handleBackToUserManagement : undefined}
           />
         );
       case 'attendance':
         return (
-          <AttendanceView 
+          <AttendanceView
             attendanceRecords={attendanceRecords}
             students={students}
             sessions={sessions}
@@ -83,7 +77,7 @@ function App() {
         );
       case 'sessions':
         return (
-          <SessionsView 
+          <SessionsView
             sessions={sessions}
             onAddSession={addSession}
             onUpdateSession={updateSession}
@@ -92,12 +86,18 @@ function App() {
         );
       case 'users':
         return (
-          <UserManagementView 
+          <UserManagementView
             searchTerm={userManagementState.searchTerm}
             currentPage={userManagementState.currentPage}
             pageSize={userManagementState.pageSize}
           />
         );
+      case 'qr-scanner':
+        return <QRScannerPage />;
+      case 'audit-logs':
+        return <AuditLogsView />;
+      case 'id-management':
+        return <div>ID Management Placeholder</div>;
       default:
         return <Dashboard attendanceRecords={attendanceRecords} students={students} sessions={sessions} />;
     }
@@ -105,7 +105,7 @@ function App() {
 
   return (
     <AuthProvider>
-      <Header onChangeView={handleViewChange} />
+      <Header activeView={activeView.name} onChangeView={handleViewChange} />
       {renderView()}
     </AuthProvider>
   );
