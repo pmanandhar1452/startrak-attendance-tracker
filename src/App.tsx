@@ -108,7 +108,6 @@ function App() {
             searchTerm={userManagementState.searchTerm}
             currentPage={userManagementState.currentPage}
             pageSize={userManagementState.pageSize}
-
         )
     }
   }
