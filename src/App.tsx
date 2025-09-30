@@ -17,14 +17,40 @@ import { useAttendance } from './hooks/useAttendance';
 
 function App() {
   const [activeView, setActiveView] = useState<{ name: string; params?: any }>({ name: 'dashboard' });
-  
+
+  // 🔹 DEBUG CODE: runs once on load
+  useEffect(() => {
+    async function debug() {
+      // 1. Check if logged in
+      const { data: user, error: userErr } = await supabase.auth.getUser()
+      console.log("🔑 Logged in user:", user, "err:", userErr)
+
+      // 2. Try fetching roles
+      const { data: roles, error: rolesErr } = await supabase
+        .from('roles')
+        .select('*')
+        .limit(5)
+      console.log("📋 Roles test:", rolesErr || roles)
+
+      // 3. Try fetching students
+      const { data: students, error: studentsErr } = await supabase
+        .from('students')
+        .select('*')
+        .limit(5)
+      console.log("👩‍🎓 Students test:", studentsErr || students)
+    }
+
+    debug()
+  }, [])
+  // 🔹 END DEBUG
+
   // User Management state preservation
   const [userManagementState, setUserManagementState] = useState({
     searchTerm: '',
     currentPage: 1,
     pageSize: 10
   });
-  
+
   const { students } = useStudents();
   const { sessions, addSession, updateSession, deleteSession } = useSessions();
   const { attendanceRecords, updateAttendanceRecord } = useAttendance();
@@ -81,35 +107,4 @@ function App() {
           <UserManagementView 
             searchTerm={userManagementState.searchTerm}
             currentPage={userManagementState.currentPage}
-            pageSize={userManagementState.pageSize}
-            onSearchChange={(searchTerm) => setUserManagementState(prev => ({ ...prev, searchTerm }))}
-            onPageChange={(currentPage) => setUserManagementState(prev => ({ ...prev, currentPage }))}
-            onPageSizeChange={(pageSize) => setUserManagementState(prev => ({ ...prev, pageSize, currentPage: 1 }))}
-            onViewStudentDetails={handleViewStudentDetails}
-          />
-        );
-      case 'qr-scanner':
-        return <QRScannerPage onBack={() => handleViewChange('dashboard')} />;
-      case 'audit-logs':
-        return <AuditLogsView />;
-      default:
-        return <Dashboard attendanceRecords={attendanceRecords} students={students} sessions={sessions} />;
-    }
-  };
-
-  return (
-    <AuthProvider>
-      <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50">
-          <Header activeView={activeView.name} onViewChange={handleViewChange} />
-          
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {renderView()}
-          </main>
-        </div>
-      </ProtectedRoute>
-    </AuthProvider>
-  );
-}
-
-export default App;
+            pageSize={use
