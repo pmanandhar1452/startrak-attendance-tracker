@@ -17,18 +17,50 @@ import { useAttendance } from './hooks/useAttendance';
 function App() {
   const [activeView, setActiveView] = useState<{ name: string; params?: any }>({ name: 'dashboard' });
 
+  // ----------------------------
+  // DEBUG FETCH FROM SUPABASE
+  // ----------------------------
+  const [testStudents, setTestStudents] = useState<any[]>([]);
+  const [testSessions, setTestSessions] = useState<any[]>([]);
+  const [testAttendance, setTestAttendance] = useState<any[]>([]);
+  const [loadingTest, setLoadingTest] = useState(true);
+  const [testError, setTestError] = useState<string | null>(null);
+
   useEffect(() => {
-  async function testFetch() {
-    const { data, error } = await supabase.from('students').select('*');
-    console.log('Students data:', data);
-    console.log('Error:', error);
-  }
+    async function fetchTestData() {
+      setLoadingTest(true);
+      setTestError(null);
 
-  testFetch();
-}, []);
+      try {
+        const { data: studentsData, error: studentsError } = await supabase.from('students').select('*');
+        if (studentsError) throw studentsError;
+        setTestStudents(studentsData || []);
 
-  
-  // User Management state preservation
+        const { data: sessionsData, error: sessionsError } = await supabase.from('sessions').select('*');
+        if (sessionsError) throw sessionsError;
+        setTestSessions(sessionsData || []);
+
+        const { data: attendanceData, error: attendanceError } = await supabase.from('attendance_records').select('*');
+        if (attendanceError) throw attendanceError;
+        setTestAttendance(attendanceData || []);
+
+        console.log('✅ Students data:', studentsData);
+        console.log('✅ Sessions data:', sessionsData);
+        console.log('✅ Attendance data:', attendanceData);
+      } catch (err: any) {
+        console.error('Supabase test fetch error:', err);
+        setTestError(err.message || 'Unknown error');
+      } finally {
+        setLoadingTest(false);
+      }
+    }
+
+    fetchTestData();
+  }, []);
+
+  // ----------------------------
+  // USER MANAGEMENT STATE
+  // ----------------------------
   const [userManagementState, setUserManagementState] = useState({
     searchTerm: '',
     currentPage: 1,
@@ -39,65 +71,36 @@ function App() {
   const { sessions, addSession, updateSession, deleteSession } = useSessions();
   const { attendanceRecords, updateAttendanceRecord } = useAttendance();
 
-  const handleViewChange = (view: string, params?: any) => {
-    setActiveView({ name: view, params });
-  };
+  const handleViewChange = (view: string, params?: any) => setActiveView({ name: view, params });
+  const handleViewStudentDetails = (studentId: string) => setActiveView({ name: 'students', params: { studentId } });
+  const handleBackToUserManagement = () => setActiveView({ name: 'users' });
 
-  const handleViewStudentDetails = (studentId: string) => {
-    setActiveView({ name: 'students', params: { studentId } });
-  };
-
-  const handleBackToUserManagement = () => {
-    setActiveView({ name: 'users' });
-  };
-
+  // ----------------------------
+  // RENDER VIEW
+  // ----------------------------
   const renderView = () => {
+    if (loadingTest) return <div className="p-4">Loading test data...</div>;
+    if (testError) return <div className="p-4 text-red-600">Test fetch error: {testError}</div>;
+
     switch (activeView.name) {
       case 'dashboard':
-        return (
-          <Dashboard
-            attendanceRecords={attendanceRecords}
-            students={students}
-            sessions={sessions}
-          />
-        );
+        return <Dashboard attendanceRecords={attendanceRecords} students={students} sessions={sessions} />;
       case 'students':
-        return (
-          <StudentsView
-            studentId={activeView.params?.studentId}
-            onBackToUserManagement={activeView.params?.studentId ? handleBackToUserManagement : undefined}
-          />
-        );
+        return <StudentsView studentId={activeView.params?.studentId} onBackToUserManagement={activeView.params?.studentId ? handleBackToUserManagement : undefined} />;
       case 'attendance':
-        return (
-          <AttendanceView
-            attendanceRecords={attendanceRecords}
-            students={students}
-            sessions={sessions}
-            onUpdateAttendance={updateAttendanceRecord}
-          />
-        );
+        return <AttendanceView attendanceRecords={attendanceRecords} students={students} sessions={sessions} onUpdateAttendance={updateAttendanceRecord} />;
       case 'sessions':
-        return (
-          <SessionsView
-            sessions={sessions}
-            onAddSession={addSession}
-            onUpdateSession={updateSession}
-            onDeleteSession={deleteSession}
-          />
-        );
+        return <SessionsView sessions={sessions} onAddSession={addSession} onUpdateSession={updateSession} onDeleteSession={deleteSession} />;
       case 'users':
-        return (
-          <UserManagementView
-            searchTerm={userManagementState.searchTerm}
-            currentPage={userManagementState.currentPage}
-            pageSize={userManagementState.pageSize}
-            onSearchChange={(searchTerm) => setUserManagementState(prev => ({ ...prev, searchTerm }))}
-            onPageChange={(page) => setUserManagementState(prev => ({ ...prev, currentPage: page }))}
-            onPageSizeChange={(pageSize) => setUserManagementState(prev => ({ ...prev, pageSize }))}
-            onViewStudentDetails={handleViewStudentDetails}
-          />
-        );
+        return <UserManagementView
+                  searchTerm={userManagementState.searchTerm}
+                  currentPage={userManagementState.currentPage}
+                  pageSize={userManagementState.pageSize}
+                  onSearchChange={(searchTerm) => setUserManagementState(prev => ({ ...prev, searchTerm }))}
+                  onPageChange={(page) => setUserManagementState(prev => ({ ...prev, currentPage: page }))}
+                  onPageSizeChange={(pageSize) => setUserManagementState(prev => ({ ...prev, pageSize }))}
+                  onViewStudentDetails={handleViewStudentDetails}
+               />;
       case 'qr-scanner':
         return <QRScannerPage />;
       case 'audit-logs':
@@ -118,13 +121,7 @@ function App() {
           </div>
         );
       default:
-        return (
-          <Dashboard
-            attendanceRecords={attendanceRecords}
-            students={students}
-            sessions={sessions}
-          />
-        );
+        return <Dashboard attendanceRecords={attendanceRecords} students={students} sessions={sessions} />;
     }
   };
 
