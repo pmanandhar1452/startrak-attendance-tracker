@@ -1,6 +1,5 @@
-import { useEffect } from 'react'
-import { supabase } from './lib/supabase'   // ✅ correct path
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from './lib/supabase';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Header from './components/Header';
@@ -21,30 +20,19 @@ function App() {
   // 🔹 DEBUG CODE: runs once on load
   useEffect(() => {
     async function debug() {
-      // 1. Check if logged in
-      const { data: user, error: userErr } = await supabase.auth.getUser()
-      console.log("🔑 Logged in user:", user, "err:", userErr)
+      const { data: user, error: userErr } = await supabase.auth.getUser();
+      console.log("🔑 Logged in user:", user, "err:", userErr);
 
-      // 2. Try fetching roles
-      const { data: roles, error: rolesErr } = await supabase
-        .from('roles')
-        .select('*')
-        .limit(5)
-      console.log("📋 Roles test:", rolesErr || roles)
+      const { data: roles, error: rolesErr } = await supabase.from('roles').select('*').limit(5);
+      console.log("📋 Roles test:", rolesErr || roles);
 
-      // 3. Try fetching students
-      const { data: students, error: studentsErr } = await supabase
-        .from('students')
-        .select('*')
-        .limit(5)
-      console.log("👩‍🎓 Students test:", studentsErr || students)
+      const { data: students, error: studentsErr } = await supabase.from('students').select('*').limit(5);
+      console.log("👩‍🎓 Students test:", studentsErr || students);
     }
 
-    debug()
-  }, [])
-  // 🔹 END DEBUG
+    debug();
+  }, []);
 
-  // User Management state preservation
   const [userManagementState, setUserManagementState] = useState({
     searchTerm: '',
     currentPage: 1,
@@ -106,8 +94,3 @@ function App() {
         return (
           <UserManagementView 
             searchTerm={userManagementState.searchTerm}
-            currentPage={userManagementState.currentPage}
-            pageSize={userManagementState.pageSize}
-            />
-        )
-    };
