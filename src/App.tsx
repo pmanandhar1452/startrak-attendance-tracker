@@ -17,33 +17,6 @@ import { useAttendance } from './hooks/useAttendance';
 function App() {
   const [activeView, setActiveView] = useState<{ name: string; params?: any }>({ name: 'dashboard' });
 
-  // 🔹 DEBUG CODE: runs once on load
-  useEffect(() => {
-    async function debug() {
-      // 1. Check if logged in
-      const { data: user, error: userErr } = await supabase.auth.getUser();
-      console.log("🔑 Logged in user:", user, "err:", userErr);
-
-      // 2. Try fetching roles
-      const { data: roles, error: rolesErr } = await supabase
-        .from('roles')
-        .select('*')
-        .limit(5);
-      console.log("📋 Roles test:", rolesErr || roles);
-
-      // 3. Try fetching students
-      const { data: students, error: studentsErr } = await supabase
-        .from('students')
-        .select('*')
-        .limit(5);
-      console.log("👩‍🎓 Students test:", studentsErr || students);
-    }
-
-    debug();
-  }, []);
-  // 🔹 END DEBUG
-
-
   // User Management state preservation
   const [userManagementState, setUserManagementState] = useState({
     searchTerm: '',
