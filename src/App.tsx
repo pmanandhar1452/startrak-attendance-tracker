@@ -145,8 +145,14 @@ function App() {
 
   return (
     <AuthProvider>
-      <Header activeView={activeView.name} onChangeView={handleViewChange} />
-      {renderView()}
+      <ProtectedRoute>
+        <div className="min-h-screen bg-gray-50">
+          <Header activeView={activeView.name} onViewChange={handleViewChange} />
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {renderView()}
+          </main>
+        </div>
+      </ProtectedRoute>
     </AuthProvider>
   );
 }
