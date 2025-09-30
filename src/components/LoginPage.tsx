@@ -128,39 +128,8 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
-            <h3 className="text-sm font-medium text-blue-900 mb-2">🚀 Admin User Setup Required</h3>
-            <div className="text-xs text-blue-800 space-y-1">
-              <p><strong>Step 1:</strong> Go to Supabase Dashboard → Authentication → Users</p>
-              <p><strong>Step 2:</strong> Click "Add user" → "Create new user"</p>
-              <p><strong>Step 3:</strong> Email: clairenegro@gmail.com, Password: admin2</p>
-              <p><strong>Step 4:</strong> Enable "Auto Confirm User" (CRITICAL!)</p>
-              <p><strong>Step 5:</strong> Click "Create user"</p>
-              <p><strong>Step 6:</strong> Use those credentials below to sign in</p>
-            </div>
-            <div className="mt-3 p-2 bg-blue-100 rounded border border-blue-200">
-              <p className="text-xs text-blue-900 font-medium">💡 Suggested Admin Credentials:</p>
-              <p className="text-xs text-blue-800 font-mono">Email: clairenegro@gmail.com</p>
-              <p className="text-xs text-blue-800 font-mono">Password: admin2</p>
-            </div>
-            <div className="mt-2 text-xs text-blue-700">
-              <p><strong>⚠️ Critical:</strong> "Auto Confirm User" must be ON, or the login will fail!</p>
-            </div>
-            <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded">
-              <p className="text-xs text-amber-800">
-                <strong>Note:</strong> After creating the auth user, the app will automatically create the user profile when you first log in.
-              </p>
-            </div>
-          </div>
         </div>
 
-        {/* Footer */}
-        <div className="text-center mt-8">
-          <p className="text-sm text-gray-500">
-            Secure authentication powered by Supabase
-          </p>
-        </div>
       </div>
     </div>
   );
