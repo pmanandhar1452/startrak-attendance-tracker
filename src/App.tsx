@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { supabase } from './lib/supabase';
 import React, { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import { AuthProvider } from './contexts/AuthContext';
@@ -42,6 +44,20 @@ function App() {
     debug();
   }, []);
   // 🔹 END DEBUG
+
+  export default function TestFetch() {
+  useEffect(() => {
+    async function fetchData() {
+      const { data, error } = await supabase.from('students').select('*');
+      console.log('Students data:', data);
+      console.log('Error (should be null):', error);
+    }
+
+    fetchData();
+  }, []);
+
+  return <div>Check the console for students data</div>;
+}
 
   // User Management state preservation
   const [userManagementState, setUserManagementState] = useState({
