@@ -110,4 +110,3 @@ function App() {
             pageSize={userManagementState.pageSize}
             />
         );
-    };
