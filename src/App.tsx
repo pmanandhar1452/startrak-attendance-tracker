@@ -1,3 +1,5 @@
+import { useEffect } from 'react'
+import { supabase } from './lib/supabase'   // ✅ correct path
 import React, { useState } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
