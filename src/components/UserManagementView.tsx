@@ -75,15 +75,15 @@ export default function UserManagementView({
     linkedStudentIds: [] as string[]
   });
 
+  // Confirmation modal state
+  const [showConfirmation, setShowConfirmation] = useState(false);
+
   // Update form data when roles are loaded
   useEffect(() => {
     if (roles.length > 0 && !formData.role) {
       setFormData(prev => ({ ...prev, role: roles[0].roleName as any }));
     }
   }, [roles]);
-
-  // Confirmation modal state
-  const [showConfirmation, setShowConfirmation] = useState(false);
 
   // Filter parents based on search term
   const filteredParents = parents.filter(user => {
@@ -113,12 +113,12 @@ export default function UserManagementView({
   // Load data when pagination changes
   useEffect(() => {
     fetchData(currentPage, pageSize === -1 ? 0 : pageSize);
-  }, [currentPage, pageSize]);
+  }, [currentPage, pageSize, fetchData]);
 
   // Initial load
   useEffect(() => {
     fetchData(1, 10);
-  }, []);
+  }, [fetchData]);
 
   const handlePageSizeChange = (newPageSize: number) => {
     onPageSizeChange(newPageSize);
@@ -699,6 +699,9 @@ export default function UserManagementView({
                     User
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Role
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -736,30 +739,46 @@ export default function UserManagementView({
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-2">
-                        <Shield className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm text-gray-900 capitalize">
-                          {user.userProfile?.roleName || 'user'}
-                        </span>
+                      <div className="text-sm text-gray-900">
+                        {/* We don't have email in the parent object, so we'll show a placeholder */}
+                        <span className="text-gray-400">Email not available</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        user.userProfile?.roleName === 'admin' 
+                          ? 'bg-red-100 text-red-800'
+                          : user.userProfile?.roleName === 'parent'
+                          ? 'bg-blue-100 text-blue-800'
+                          : user.userProfile?.roleName === 'instructor'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        <Shield className="h-3 w-3 mr-1" />
+                        <span className="capitalize">
+                          {user.userProfile?.roleName || 'user'}
+                        </span>
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       {user.qrCode ? (
-                        <div className="flex items-center space-x-2">
-                          <QrCode className="h-4 w-4 text-green-600" />
-                          <span className="text-sm font-mono text-gray-900">
+                        <div className="flex items-center space-x-1">
+                          <div className="bg-green-100 p-1 rounded">
+                            <QrCode className="h-3 w-3 text-green-600" />
+                          </div>
+                          <span className="text-xs font-mono text-gray-700 bg-gray-100 px-2 py-1 rounded">
                             {user.qrCode}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-400">No QR code</span>
+                        <span className="text-xs text-gray-400 italic">No QR code</span>
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
-                        <Users className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm text-gray-900">
-                          {user.linkedStudents.length} students
+                      <div className="flex items-center space-x-1 mb-1">
+                        <Users className="h-3 w-3 text-gray-400" />
+                        <span className="text-xs text-gray-600">
+                          {user.linkedStudents.length} student{user.linkedStudents.length !== 1 ? 's' : ''}
                         </span>
                       </div>
                       {user.linkedStudents.length > 0 && (
@@ -768,14 +787,14 @@ export default function UserManagementView({
                             <button
                               key={student.id}
                               onClick={() => onViewStudentDetails(student.id)}
-                              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors cursor-pointer"
+                              className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors cursor-pointer border border-blue-200"
                               title={`View ${student.name}'s profile`}
                             >
                               {student.name}
                             </button>
                           ))}
                           {user.linkedStudents.length > 3 && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200">
                               +{user.linkedStudents.length - 3} more
                             </span>
                           )}
@@ -784,25 +803,24 @@ export default function UserManagementView({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div>
-                        <div className="font-medium text-gray-900">
+                        <div className="text-xs font-medium text-gray-900">
                           {new Date(user.createdAt).toLocaleDateString()}
                         </div>
                         <div className="text-xs text-gray-500">
                           {new Date(user.createdAt).toLocaleTimeString([], { 
                             hour: '2-digit', 
-                            minute: '2-digit',
-                            hour12: true 
+                            minute: '2-digit'
                           })}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end space-x-2">
+                      <div className="flex items-center justify-end space-x-1">
                         <button
                           onClick={() => {
                             startEditUser(user);
                           }}
-                          className="text-purple-600 hover:text-purple-900 p-1 rounded hover:bg-purple-50"
+                          className="text-purple-600 hover:text-purple-900 p-1.5 rounded-md hover:bg-purple-50 transition-colors"
                           title="Edit User"
                         >
                           <Edit className="h-4 w-4" />
@@ -816,7 +834,7 @@ export default function UserManagementView({
                                 setShowLinkForm(user);
                                 setLinkFormData(user.linkedStudents.map(s => s.id));
                               }}
-                              className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                              className="text-blue-600 hover:text-blue-900 p-1.5 rounded-md hover:bg-blue-50 transition-colors"
                               title="Link Students"
                             >
                               <Link className="h-4 w-4" />
@@ -824,7 +842,7 @@ export default function UserManagementView({
                             <button
                               onClick={() => handleGenerateQR(user)}
                               disabled={isSubmitting}
-                              className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50 disabled:opacity-50"
+                              className="text-green-600 hover:text-green-900 p-1.5 rounded-md hover:bg-green-50 disabled:opacity-50 transition-colors"
                               title="Generate QR Code"
                             >
                               <QrCode className="h-4 w-4" />
@@ -834,89 +852,4 @@ export default function UserManagementView({
                         
                         <button
                           onClick={() => handleDeleteUser(user)}
-                          className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
-                          title="Delete User"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        
-        {/* User Count Display */}
-        <div className="mt-4 flex justify-end">
-          <div className="text-sm text-gray-500">
-            {filteredParents.length} of {totalCount} {totalCount === 1 ? 'user' : 'users'}
-            {searchTerm && ` matching "${searchTerm}"`}
-            {/* Debug info */}
-            <span className="ml-2 text-xs text-gray-400">
-              (Raw: {parents.length}, Filtered: {filteredParents.length}, Paginated: {paginatedUsers.length})
-            </span>
-          </div>
-        </div>
-        
-        {/* Pagination Controls */}
-        {pageSize !== -1 && totalPages > 1 && filteredParents.length > 0 && (
-          <div className="mt-6 flex items-center justify-between border-t border-gray-200 pt-4">
-            <div className="text-sm text-gray-700">
-              Showing {startRecord} to {endRecord} of {filteredParents.length} results
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-              
-              <div className="flex items-center space-x-1">
-                {/* Show page numbers */}
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
-                  
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      className={`px-3 py-2 text-sm font-medium rounded-lg ${
-                        currentPage === pageNum
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-700 hover:bg-gray-50 border border-gray-300'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-              </div>
-              
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+                          className="text-red-600 hover:text-red-900 p-1.5
