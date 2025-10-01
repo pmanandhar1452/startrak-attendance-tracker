@@ -853,3 +853,5 @@ export default function UserManagementView({
                         <button
                           onClick={() => handleDeleteUser(user)}
                           className="text-red-600 hover:text-red-900 p-1.5
+            
+                        </button>
