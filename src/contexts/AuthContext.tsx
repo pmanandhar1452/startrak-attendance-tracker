@@ -68,7 +68,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         await ensureUserProfile(data.user);
       }
       
-      return { error };
+      return { data, error };
     } catch (networkError) {
       console.error('Network error during sign in:', networkError);
       
