@@ -1,144 +1,109 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from './lib/supabase';
-import { AuthProvider } from './contexts/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
-import Header from './components/Header';
-import Dashboard from './components/Dashboard';
-import StudentsView from './components/StudentsView';
-import AttendanceView from './components/AttendanceView';
-import SessionsView from './components/SessionsView';
-import UserManagementView from './components/UserManagementView';
-import QRScannerPage from './components/QRScannerPage';
-import AuditLogsView from './components/AuditLogsView';
-import { useStudents } from './hooks/useStudents';
-import { useSessions } from './hooks/useSessions';
-import { useAttendance } from './hooks/useAttendance';
+import React, { useEffect, useState } from "react";
+import { supabase } from "./lib/supabase"; // make sure this points to your supabase client
+import Header from "./components/Header";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
-  const [activeView, setActiveView] = useState<{ name: string; params?: any }>({ name: 'dashboard' });
+  const [students, setStudents] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [attendance, setAttendance] = useState<any[]>([]);
+
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  async function testFetch() {
-    const { data, error } = await supabase.from('students').select('*');
-    console.log('Students data:', data);
-    console.log('Error:', error);
-  }
+    const fetchData = async () => {
+      try {
+        // ✅ Fetch students with linked profile names
+        const { data: studentData, error: studentError } = await supabase
+          .from("students")
+          .select(`
+            id,
+            level,
+            qr_code,
+            created_at,
+            user_profiles (full_name, role_id)
+          `)
+          .order("created_at", { ascending: false });
 
-  testFetch();
-}, []);
+        if (studentError) console.error("Students fetch error:", studentError);
+        else setStudents(studentData || []);
 
-  
-  // User Management state preservation
-  const [userManagementState, setUserManagementState] = useState({
-    searchTerm: '',
-    currentPage: 1,
-    pageSize: 10
-  });
+        // ✅ Fetch sessions
+        const { data: sessionData, error: sessionError } = await supabase
+          .from("sessions")
+          .select("id, name, instructor, start_time, end_time, status, created_at")
+          .order("created_at", { ascending: false });
 
-  const { students } = useStudents();
-  const { sessions, addSession, updateSession, deleteSession } = useSessions();
-  const { attendanceRecords, updateAttendanceRecord } = useAttendance();
+        if (sessionError) console.error("Sessions fetch error:", sessionError);
+        else setSessions(sessionData || []);
 
-  const handleViewChange = (view: string, params?: any) => {
-    setActiveView({ name: view, params });
-  };
+        // ✅ Fetch attendance linked to students + user_profiles
+        const { data: attendanceData, error: attendanceError } = await supabase
+          .from("attendance")
+          .select(`
+            id,
+            check_in,
+            learning_start,
+            check_out,
+            created_at,
+            students (
+              id,
+              user_profiles (full_name)
+            )
+          `)
+          .order("created_at", { ascending: false });
 
-  const handleViewStudentDetails = (studentId: string) => {
-    setActiveView({ name: 'students', params: { studentId } });
-  };
+        if (attendanceError) console.error("Attendance fetch error:", attendanceError);
+        else setAttendance(attendanceData || []);
+      } catch (err) {
+        console.error("Unexpected fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleBackToUserManagement = () => {
-    setActiveView({ name: 'users' });
-  };
-
-  const renderView = () => {
-    switch (activeView.name) {
-      case 'dashboard':
-        return (
-          <Dashboard
-            attendanceRecords={attendanceRecords}
-            students={students}
-            sessions={sessions}
-          />
-        );
-      case 'students':
-        return (
-          <StudentsView
-            studentId={activeView.params?.studentId}
-            onBackToUserManagement={activeView.params?.studentId ? handleBackToUserManagement : undefined}
-          />
-        );
-      case 'attendance':
-        return (
-          <AttendanceView
-            attendanceRecords={attendanceRecords}
-            students={students}
-            sessions={sessions}
-            onUpdateAttendance={updateAttendanceRecord}
-          />
-        );
-      case 'sessions':
-        return (
-          <SessionsView
-            sessions={sessions}
-            onAddSession={addSession}
-            onUpdateSession={updateSession}
-            onDeleteSession={deleteSession}
-          />
-        );
-      case 'users':
-        return (
-          <UserManagementView
-            searchTerm={userManagementState.searchTerm}
-            currentPage={userManagementState.currentPage}
-            pageSize={userManagementState.pageSize}
-            onSearchChange={(searchTerm) => setUserManagementState(prev => ({ ...prev, searchTerm }))}
-            onPageChange={(page) => setUserManagementState(prev => ({ ...prev, currentPage: page }))}
-            onPageSizeChange={(pageSize) => setUserManagementState(prev => ({ ...prev, pageSize }))}
-            onViewStudentDetails={handleViewStudentDetails}
-          />
-        );
-      case 'qr-scanner':
-        return <QRScannerPage />;
-      case 'audit-logs':
-        return <AuditLogsView />;
-      case 'id-management':
-        return (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
-            <div className="max-w-md mx-auto">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V4a2 2 0 114 0v2m-4 0a2 2 0 104 0m-4 0v2m0 0h4" />
-                </svg>
-              </div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">ID Management</h2>
-              <p className="text-gray-600 mb-4">Generate and manage student ID cards, QR codes, and access cards.</p>
-              <p className="text-sm text-gray-500">This feature is coming soon.</p>
-            </div>
-          </div>
-        );
-      default:
-        return (
-          <Dashboard
-            attendanceRecords={attendanceRecords}
-            students={students}
-            sessions={sessions}
-          />
-        );
-    }
-  };
+    fetchData();
+  }, []);
 
   return (
-    <AuthProvider>
-      <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50">
-          <Header activeView={activeView.name} onViewChange={handleViewChange} />
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {renderView()}
-          </main>
-        </div>
-      </ProtectedRoute>
-    </AuthProvider>
+    <ProtectedRoute>
+      <div className="min-h-screen bg-gray-100">
+        <Header />
+        <main className="p-6">
+          <h1 className="text-2xl font-bold mb-4">Supabase Debug Panel</h1>
+
+          {loading ? (
+            <p>Loading...</p>
+          ) : (
+            <>
+              {/* Students */}
+              <section className="mb-6">
+                <h2 className="text-xl font-semibold mb-2">Students</h2>
+                <pre className="bg-white p-3 rounded shadow text-sm overflow-x-auto">
+                  {JSON.stringify(students, null, 2)}
+                </pre>
+              </section>
+
+              {/* Sessions */}
+              <section className="mb-6">
+                <h2 className="text-xl font-semibold mb-2">Sessions</h2>
+                <pre className="bg-white p-3 rounded shadow text-sm overflow-x-auto">
+                  {JSON.stringify(sessions, null, 2)}
+                </pre>
+              </section>
+
+              {/* Attendance */}
+              <section>
+                <h2 className="text-xl font-semibold mb-2">Attendance</h2>
+                <pre className="bg-white p-3 rounded shadow text-sm overflow-x-auto">
+                  {JSON.stringify(attendance, null, 2)}
+                </pre>
+              </section>
+            </>
+          )}
+        </main>
+      </div>
+    </ProtectedRoute>
   );
 }
 
