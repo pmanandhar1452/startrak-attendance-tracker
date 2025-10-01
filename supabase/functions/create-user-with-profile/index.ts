@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -22,7 +21,7 @@ interface CreateUserResponse {
   error?: string
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -84,6 +83,23 @@ serve(async (req) => {
     // Initialize Supabase client with service role key
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing environment variables:', { 
+        hasUrl: !!supabaseUrl, 
+        hasServiceKey: !!supabaseServiceKey 
+      })
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Server configuration error: Missing required environment variables' 
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      )
+    }
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
