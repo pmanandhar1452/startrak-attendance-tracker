@@ -93,6 +93,12 @@ export default function UserManagementView({
       return;
     }
 
+    if (!formData.role) {
+      setSubmitError('Please select a role');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const password = formData.password || Math.random().toString(36).slice(-8);
       const requestData = { ...formData, password, email: formData.email.trim(), fullName: formData.fullName.trim() };
@@ -486,14 +492,23 @@ export default function UserManagementView({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                 <select
+                  required
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
+                  <option value="">Select a role...</option>
                   {roles.map(role => (
-                    <option key={role.id} value={role.roleName}>{role.roleName}</option>
+                    <option key={role.id} value={role.roleName}>
+                      {role.roleName.charAt(0).toUpperCase() + role.roleName.slice(1)}
+                    </option>
                   ))}
                 </select>
+                {roles.length === 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Using default roles (admin, parent, instructor)
+                  </p>
+                )}
               </div>
 
               <div className="flex justify-end space-x-3 pt-4">
@@ -552,12 +567,16 @@ export default function UserManagementView({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                 <select
+                  required
                   value={editFormData.roleId}
                   onChange={(e) => setEditFormData({ ...editFormData, roleId: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
+                  <option value="">Select a role...</option>
                   {roles.map(role => (
-                    <option key={role.id} value={role.id}>{role.roleName}</option>
+                    <option key={role.id} value={role.id}>
+                      {role.roleName.charAt(0).toUpperCase() + role.roleName.slice(1)}
+                    </option>
                   ))}
                 </select>
               </div>

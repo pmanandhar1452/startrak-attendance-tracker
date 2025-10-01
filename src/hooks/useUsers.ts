@@ -3,6 +3,13 @@ import { UserProfile, Role, Parent, CreateUserRequest, EditUserRequest } from '.
 import { UserService } from '../services/userService';
 import { QRService } from '../services/qrService';
 
+// Fallback roles in case database fetch fails
+const FALLBACK_ROLES: Role[] = [
+  { id: 'admin', roleName: 'admin', createdAt: new Date().toISOString() },
+  { id: 'parent', roleName: 'parent', createdAt: new Date().toISOString() },
+  { id: 'instructor', roleName: 'instructor', createdAt: new Date().toISOString() }
+];
+
 export function useUsers() {
   const [parents, setParents] = useState<Parent[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -18,13 +25,20 @@ export function useUsers() {
       
       console.log('Fetching users data...', { page, pageSize });
       
-      const [usersResult, rolesData] = await Promise.all([
-        UserService.getAllParents(page, pageSize),
-        UserService.getAllRoles(),
-      ]);
+      // Fetch users data
+      const usersResult = await UserService.getAllParents(page, pageSize);
+      
+      // Try to fetch roles, but use fallback if it fails
+      let rolesData = FALLBACK_ROLES;
+      try {
+        rolesData = await UserService.getAllRoles();
+        console.log('Roles data fetched successfully:', rolesData);
+      } catch (rolesError) {
+        console.warn('Failed to fetch roles from database, using fallback roles:', rolesError);
+        // Use fallback roles - don't set this as an error since we have a workaround
+      }
       
       console.log('Users result:', usersResult);
-      console.log('Roles data:', rolesData);
       
       setParents(usersResult.data);
       setTotalCount(usersResult.count);
@@ -41,6 +55,8 @@ export function useUsers() {
     } catch (err) {
       console.error('Error fetching user data:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch user data');
+      // Set fallback roles even on error
+      setRoles(FALLBACK_ROLES);
     } finally {
       setLoading(false);
     }

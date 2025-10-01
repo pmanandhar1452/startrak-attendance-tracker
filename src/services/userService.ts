@@ -21,6 +21,32 @@ export class UserService {
     return data.map(this.mapRoleFromDB);
   }
 
+  static async createRoleIfNotExists(roleName: string): Promise<Role> {
+    // First try to get existing role
+    const { data: existingRole, error: fetchError } = await supabase
+      .from('roles')
+      .select('*')
+      .eq('role_name', roleName)
+      .single();
+
+    if (existingRole && !fetchError) {
+      return this.mapRoleFromDB(existingRole);
+    }
+
+    // If role doesn't exist, create it
+    const { data: newRole, error: createError } = await supabase
+      .from('roles')
+      .insert({ role_name: roleName })
+      .select()
+      .single();
+
+    if (createError) {
+      throw new Error(`Failed to create role: ${createError.message}`);
+    }
+
+    return this.mapRoleFromDB(newRole);
+  }
+
   static async getAllUsers(page = 1, pageSize = 10): Promise<{ data: Parent[]; count: number }> {
     try {
       console.log('UserService.getAllUsers called with:', { page, pageSize });
