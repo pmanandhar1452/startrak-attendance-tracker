@@ -20,55 +20,69 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body: CreateUserRequest = await req.json()
+    const requestData: CreateUserRequest = await req.json()
 
-    // Validate
-    if (!body.email?.trim() || !body.password?.trim() || !body.fullName?.trim()) {
+    // ✅ Step 1: Validate input
+    if (!requestData.email?.trim() || !requestData.password?.trim() || !requestData.fullName?.trim()) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Missing required fields' }),
-        { headers: corsHeaders, status: 400 }
+        JSON.stringify({ success: false, error: 'Email, password, and full name are required.' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    // ✅ Step 2: Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    // ✅ Step 3: Create Auth user (so it shows in Supabase Dashboard)
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: requestData.email.trim(),
+      password: requestData.password.trim(),
+      email_confirm: true,
+      user_metadata: {
+        full_name: requestData.fullName.trim(),
+        role_name: requestData.role
+      }
+    })
+
+    if (authError || !authData.user) {
+      return new Response(
+        JSON.stringify({ success: false, error: authError?.message || 'Failed to create auth user' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      )
+    }
+
+    // ✅ Step 4: Call stored procedure (handles DB inserts + rollback safety)
+    const { data: userResult, error: rpcError } = await supabase.rpc(
+      'create_user_with_profile',
+      {
+        p_user_id: authData.user.id,
+        p_full_name: requestData.fullName.trim(),
+        p_role_name: requestData.role,
+        p_linked_students: requestData.linkedStudentIds || []
+      }
     )
 
-    // Check if user already exists
-    const { data: users, error: listError } = await supabase.auth.admin.listUsers()
-    if (listError) throw listError
-    if (users.users.find(u => u.email === body.email.trim())) {
+    if (rpcError) {
+      // Cleanup if DB setup fails
+      await supabase.auth.admin.deleteUser(authData.user.id)
       return new Response(
-        JSON.stringify({ success: false, error: 'Email already exists' }),
-        { headers: corsHeaders, status: 409 }
+        JSON.stringify({ success: false, error: rpcError.message }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
 
-    // Call stored procedure
-    const { data, error } = await supabase.rpc('create_user_with_profile', {
-      p_email: body.email.trim(),
-      p_password: body.password.trim(),
-      p_full_name: body.fullName.trim(),
-      p_role: body.role,
-      p_linked_student_ids: body.linkedStudentIds ?? null
-    })
-
-    if (error || !data?.success) {
-      return new Response(
-        JSON.stringify({ success: false, error: data?.error || error.message }),
-        { headers: corsHeaders, status: 400 }
-      )
-    }
-
-    return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    })
-  } catch (e) {
+    // ✅ Step 5: Return success
     return new Response(
-      JSON.stringify({ success: false, error: e.message }),
-      { headers: corsHeaders, status: 500 }
+      JSON.stringify({ success: true, user: authData.user, profile: userResult }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+    )
+
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ success: false, error: error.message }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }
 })
