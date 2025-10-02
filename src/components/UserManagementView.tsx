@@ -398,8 +398,18 @@ export default function UserManagementView({
             <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No Users Found</h3>
             <p className="text-gray-500">
-              {searchTerm ? 'Try adjusting your search terms' : 'Start by creating your first user'}
+              {searchTerm ? 'Try adjusting your search terms' : 
+               error ? 'There was an error loading users. Please check your permissions.' : 
+               'Start by creating your first user'}
             </p>
+            {error && (
+              <button
+                onClick={() => fetchData(currentPage, pageSize)}
+                className="mt-4 bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Retry Loading Users
+              </button>
+            )}
           </div>
         )}
       </div>
