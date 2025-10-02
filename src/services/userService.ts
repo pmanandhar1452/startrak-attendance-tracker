@@ -225,13 +225,13 @@ export class UserService {
           students (
             id,
             name,
-            student_id,
+            user_id,
             email,
             level,
-            subject,
+            subjects,
             program,
             avatar,
-            enrollment_date,
+            created_at,
             status
           )
         `);
@@ -600,8 +600,8 @@ export class UserService {
       qrCodeUrl: parentRecord?.qr_code_url || undefined,
       linkedStudents: parentLinks.map((link: any) => ({
         id: link.students?.id || '',
-        name: link.students?.user_id || 'Unknown Student',
-        studentId: link.students?.id || '',
+        name: link.students?.name || 'Unknown Student',
+        studentId: link.students?.user_id || link.students?.id || '',
         email: `student-${link.students?.id || 'unknown'}@example.com`,
         level: link.students?.level || '',
         subject: Array.isArray(link.students?.subjects) ? link.students.subjects.join(', ') : (link.students?.subjects || ''),
