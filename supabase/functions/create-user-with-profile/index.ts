@@ -27,7 +27,12 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  console.log('=== Edge Function Start ===')
+  console.log('Request method:', req.method)
+  console.log('Request headers:', Object.fromEntries(req.headers.entries()))
+
   try {
+    console.log('Parsing request body...')
     const requestData: CreateUserRequest = await req.json()
     
     console.log('Received user creation request:', {
@@ -84,6 +89,13 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     
+    console.log('Environment check:', {
+      hasUrl: !!supabaseUrl,
+      hasServiceKey: !!supabaseServiceKey,
+      urlLength: supabaseUrl?.length || 0,
+      keyLength: supabaseServiceKey?.length || 0
+    })
+
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error('Missing environment variables:', { 
         hasUrl: !!supabaseUrl, 
@@ -108,6 +120,7 @@ Deno.serve(async (req) => {
       }
     })
 
+    console.log('Supabase client initialized')
     console.log('Creating auth user with email:', requestData.email.trim())
 
     // Step 1: Create auth user using admin API
@@ -122,6 +135,11 @@ Deno.serve(async (req) => {
 
     if (authError) {
       console.error('Auth user creation failed:', authError)
+      console.error('Auth error details:', {
+        message: authError.message,
+        status: authError.status,
+        name: authError.name
+      })
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -135,6 +153,7 @@ Deno.serve(async (req) => {
     }
 
     if (!authData.user) {
+      console.error('No user data returned from auth creation')
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -150,6 +169,7 @@ Deno.serve(async (req) => {
     console.log('Auth user created successfully:', authData.user.id)
 
     // Step 2: Get or create role
+    console.log('Looking up role:', requestData.role)
     let roleData
     const { data: existingRole, error: roleError } = await supabase
       .from('roles')
@@ -159,6 +179,7 @@ Deno.serve(async (req) => {
 
     if (roleError && roleError.code === 'PGRST116') {
       // Role doesn't exist, create it
+      console.log('Role does not exist, creating:', requestData.role)
       const { data: newRole, error: createRoleError } = await supabase
         .from('roles')
         .insert({ role_name: requestData.role })
@@ -167,6 +188,11 @@ Deno.serve(async (req) => {
       
       if (createRoleError) {
         console.error('Role creation failed:', createRoleError)
+        console.error('Role creation error details:', {
+          message: createRoleError.message,
+          code: createRoleError.code,
+          details: createRoleError.details
+        })
         return new Response(
           JSON.stringify({ 
             success: false, 
@@ -181,6 +207,11 @@ Deno.serve(async (req) => {
       roleData = newRole
     } else if (roleError) {
       console.error('Role fetch failed:', roleError)
+      console.error('Role fetch error details:', {
+        message: roleError.message,
+        code: roleError.code,
+        details: roleError.details
+      })
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -198,6 +229,7 @@ Deno.serve(async (req) => {
     console.log('Role resolved:', roleData)
 
     // Step 3: Create user profile
+    console.log('Creating user profile...')
     const { data: profileData, error: profileError } = await supabase
       .from('user_profiles')
       .insert({
@@ -210,6 +242,11 @@ Deno.serve(async (req) => {
 
     if (profileError) {
       console.error('Profile creation failed:', profileError)
+      console.error('Profile creation error details:', {
+        message: profileError.message,
+        code: profileError.code,
+        details: profileError.details
+      })
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -228,6 +265,7 @@ Deno.serve(async (req) => {
 
     // Step 4: If creating a parent, create parent record and link to students
     if (roleData.role_name === 'parent') {
+      console.log('Creating parent record...')
       // Generate QR code
       const qrCode = `QR_${Math.random().toString(36).substr(2, 8).toUpperCase()}`
 
@@ -243,6 +281,11 @@ Deno.serve(async (req) => {
 
       if (parentError) {
         console.error('Parent creation failed:', parentError)
+        console.error('Parent creation error details:', {
+          message: parentError.message,
+          code: parentError.code,
+          details: parentError.details
+        })
         return new Response(
           JSON.stringify({ 
             success: false, 
@@ -260,6 +303,7 @@ Deno.serve(async (req) => {
 
       // Link to students if provided
       if (requestData.linkedStudentIds && requestData.linkedStudentIds.length > 0) {
+        console.log('Linking students:', requestData.linkedStudentIds)
         const linkInserts = requestData.linkedStudentIds.map(studentId => ({
           student_id: studentId,
           parent_id: newParentData.id
@@ -271,6 +315,11 @@ Deno.serve(async (req) => {
 
         if (linkError) {
           console.error('Student linking failed:', linkError)
+          console.error('Student linking error details:', {
+            message: linkError.message,
+            code: linkError.code,
+            details: linkError.details
+          })
           return new Response(
             JSON.stringify({ 
               success: false, 
@@ -288,6 +337,7 @@ Deno.serve(async (req) => {
     }
 
     // Step 5: Create audit log
+    console.log('Creating audit log...')
     try {
       await supabase
         .from('audit_logs')
@@ -305,6 +355,7 @@ Deno.serve(async (req) => {
           ip_address: null,
           user_agent: req.headers.get('user-agent') || null
         })
+      console.log('Audit log created successfully')
     } catch (auditError) {
       console.warn('Audit log creation failed:', auditError)
       // Don't fail the entire operation for audit log issues
@@ -327,6 +378,7 @@ Deno.serve(async (req) => {
     }
 
     console.log('User creation completed successfully')
+    console.log('=== Edge Function Success ===')
 
     return new Response(
       JSON.stringify(response),
@@ -338,6 +390,13 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Unexpected error in user creation:', error)
+    console.error('Error stack:', error.stack)
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      cause: error.cause
+    })
+    console.log('=== Edge Function Error ===')
     return new Response(
       JSON.stringify({ 
         success: false, 
