@@ -100,43 +100,51 @@ export class UserService {
       // Get user IDs from user profiles
       const userIds = userProfilesData.map(profile => profile.id);
       
-      // Fetch parent records for users who have them
-      const { data: parentsData, error: parentsError } = await supabase
-        .from('parents')
-        .select('*')
-        .in('user_id', userIds);
+      // Fetch parent records for users who have them (only if we have user IDs)
+      let parentsData = [];
+      if (userIds.length > 0) {
+        const { data: fetchedParentsData, error: parentsError } = await supabase
+          .from('parents')
+          .select('*')
+          .in('user_id', userIds);
 
-      if (parentsError) {
-        console.warn('Failed to fetch parent records:', parentsError.message);
+        if (parentsError) {
+          console.warn('Failed to fetch parent records:', parentsError.message);
+        } else {
+          parentsData = fetchedParentsData || [];
+        }
       }
 
-      // Fetch student links
-      const { data: linksData, error: linksError } = await supabase
-        .from('student_parent_link')
-        .select(`
-          parent_id,
-          student_id,
-          students (
-            id,
-            name,
+      // Fetch student links (only if we have parent data)
+      let linksData = [];
+      if (parentsData.length > 0) {
+        const parentIds = parentsData.map(p => p.id);
+        const { data: fetchedLinksData, error: linksError } = await supabase
+          .from('student_parent_link')
+          .select(`
+            parent_id,
             student_id,
-            email,
-            level,
-            subject,
-            program,
-            avatar,
-            enrollment_date,
-            status
-          )
-        `);
+            students (
+              id,
+              user_id,
+              level,
+              subjects,
+              program,
+              created_at
+            )
+          `)
+          .in('parent_id', parentIds);
 
-      if (linksError) {
-        console.warn('Failed to fetch student links:', linksError.message);
+        if (linksError) {
+          console.warn('Failed to fetch student links:', linksError.message);
+        } else {
+          linksData = fetchedLinksData || [];
+        }
       }
 
       // Map user profiles to Parent objects (including non-parent users)
       const mappedUsers = userProfilesData.map(userProfile => 
-        this.mapUserProfileToParent(userProfile, parentsData || [], linksData || [])
+        this.mapUserProfileToParent(userProfile, parentsData, linksData)
       );
       
       console.log('Mapped users:', mappedUsers.length);
@@ -592,16 +600,16 @@ export class UserService {
       qrCodeUrl: parentRecord?.qr_code_url || undefined,
       linkedStudents: parentLinks.map((link: any) => ({
         id: link.students?.id || '',
-        name: link.students?.user_id || '',
+        name: link.students?.user_id || 'Unknown Student',
         studentId: link.students?.id || '',
-        email: link.students?.email || '',
+        email: `student-${link.students?.id || 'unknown'}@example.com`,
         level: link.students?.level || '',
-        subject: link.students?.subjects?.[0] || '',
+        subject: Array.isArray(link.students?.subjects) ? link.students.subjects.join(', ') : (link.students?.subjects || ''),
         program: link.students?.program || undefined,
-        avatar: link.students?.avatar || undefined,
+        avatar: undefined,
         schedule: {},
         enrollmentDate: link.students?.created_at || '',
-        status: link.students?.status || 'active'
+        status: 'active'
       })),
       createdAt: parentRecord?.created_at || userProfile.created_at,
       updatedAt: parentRecord?.updated_at || userProfile.updated_at

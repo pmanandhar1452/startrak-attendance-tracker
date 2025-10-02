@@ -106,6 +106,9 @@ export default function UserManagementView({
       setSuccessMessage(`User ${requestData.fullName} created successfully`);
       setFormData({ email: '', password: '', fullName: '', role: 'parent', linkedStudentIds: [] });
       setShowCreateForm(false);
+      // Refresh the user list after successful creation
+      await fetchData(1, pageSize);
+      onPageChange(1); // Reset to first page
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Failed to create user');
     } finally { 
