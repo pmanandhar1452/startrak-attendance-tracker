@@ -118,14 +118,13 @@ export class UserService {
           student_id,
           students (
             id,
-            name,
-            student_id,
+            user_id,
             email,
             level,
-            subject,
+            subjects,
             program,
             avatar,
-            enrollment_date,
+            created_at,
             status
           )
         `);
@@ -216,14 +215,13 @@ export class UserService {
           student_id,
           students (
             id,
-            name,
-            student_id,
+            user_id,
             email,
             level,
-            subject,
+            subjects,
             program,
             avatar,
-            enrollment_date,
+            created_at,
             status
           )
         `);
