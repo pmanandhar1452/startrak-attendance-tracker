@@ -121,6 +121,30 @@ Deno.serve(async (req) => {
     })
 
     console.log('Supabase client initialized')
+    
+    // Check if user already exists first
+    console.log('Checking if user exists with email:', requestData.email.trim())
+    const { data: existingUsers, error: listError } = await supabase.auth.admin.listUsers()
+    
+    if (listError) {
+      console.warn('Could not check existing users:', listError.message)
+    } else {
+      const existingUser = existingUsers.users.find(user => user.email === requestData.email.trim())
+      if (existingUser) {
+        console.error('User already exists with email:', requestData.email.trim())
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: `A user with email address "${requestData.email.trim()}" already exists. Please use a different email address.` 
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 409,
+          }
+        )
+      }
+    }
+
     console.log('Creating auth user with email:', requestData.email.trim())
 
     // Step 1: Create auth user using admin API
@@ -143,7 +167,9 @@ Deno.serve(async (req) => {
       })
       
       // Handle specific error cases
-      if (authError.code === 'email_exists' || authError.message?.includes('already been registered')) {
+      if (authError.message?.includes('already been registered') || 
+          authError.message?.includes('email_exists') ||
+          authError.message?.includes('User already registered')) {
         return new Response(
           JSON.stringify({ 
             success: false, 
@@ -263,6 +289,15 @@ Deno.serve(async (req) => {
         code: profileError.code,
         details: profileError.details
       })
+      
+      // If profile creation fails, clean up the auth user
+      try {
+        console.log('Cleaning up auth user due to profile creation failure...')
+        await supabase.auth.admin.deleteUser(authData.user.id)
+      } catch (cleanupError) {
+        console.warn('Failed to cleanup auth user:', cleanupError)
+      }
+      
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -302,6 +337,15 @@ Deno.serve(async (req) => {
           code: parentError.code,
           details: parentError.details
         })
+        
+        // Clean up auth user and profile if parent creation fails
+        try {
+          console.log('Cleaning up due to parent creation failure...')
+          await supabase.auth.admin.deleteUser(authData.user.id)
+        } catch (cleanupError) {
+          console.warn('Failed to cleanup after parent creation failure:', cleanupError)
+        }
+        
         return new Response(
           JSON.stringify({ 
             success: false, 

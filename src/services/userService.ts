@@ -269,12 +269,12 @@ export class UserService {
 
       if (error) {
         console.error('Edge Function error:', error);
-        throw new Error(`Failed to create user: ${error.message}`);
+        throw new Error(`Failed to create user: ${error.message || 'Edge Function returned an error'}`);
       }
 
       if (!data.success) {
         console.error('Edge Function returned error:', data.error);
-        throw new Error(`Database error creating new user: ${data.error}`);
+        throw new Error(data.error || 'Unknown error occurred during user creation');
       }
 
       console.log('User created successfully via Edge Function:', data);
@@ -285,6 +285,12 @@ export class UserService {
       };
     } catch (error) {
       console.error('User creation error:', error);
+      
+      // If it's a network error, provide more context
+      if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+        throw new Error('Network error: Unable to connect to user creation service. Please check your internet connection and try again.');
+      }
+      
       throw error;
     }
   }
