@@ -118,13 +118,14 @@ export class UserService {
           student_id,
           students (
             id,
-            user_id,
+            name,
+            student_id,
             email,
             level,
-            subjects,
+            subject,
             program,
             avatar,
-            created_at,
+            enrollment_date,
             status
           )
         `);
@@ -215,13 +216,14 @@ export class UserService {
           student_id,
           students (
             id,
-            user_id,
+            name,
+            student_id,
             email,
             level,
-            subjects,
+            subject,
             program,
             avatar,
-            created_at,
+            enrollment_date,
             status
           )
         `);
@@ -548,15 +550,15 @@ export class UserService {
       qrCodeUrl: parent.qr_code_url || undefined,
       linkedStudents: parentLinks.map((link: any) => ({
         id: link.students?.id || '',
-        name: link.students?.name || '',
-        studentId: link.students?.student_id || '',
+        name: link.students?.user_id || '',
+        studentId: link.students?.id || '',
         email: link.students?.email || '',
         level: link.students?.level || '',
-        subject: link.students?.subject || '',
+        subject: link.students?.subjects?.[0] || '',
         program: link.students?.program || undefined,
         avatar: link.students?.avatar || undefined,
         schedule: {},
-        enrollmentDate: link.students?.enrollment_date || '',
+        enrollmentDate: link.students?.created_at || '',
         status: link.students?.status || 'active'
       })),
       createdAt: parent.created_at,
@@ -590,15 +592,15 @@ export class UserService {
       qrCodeUrl: parentRecord?.qr_code_url || undefined,
       linkedStudents: parentLinks.map((link: any) => ({
         id: link.students?.id || '',
-        name: link.students?.name || '',
-        studentId: link.students?.student_id || '',
+        name: link.students?.user_id || '',
+        studentId: link.students?.id || '',
         email: link.students?.email || '',
         level: link.students?.level || '',
-        subject: link.students?.subject || '',
+        subject: link.students?.subjects?.[0] || '',
         program: link.students?.program || undefined,
         avatar: link.students?.avatar || undefined,
         schedule: {},
-        enrollmentDate: link.students?.enrollment_date || '',
+        enrollmentDate: link.students?.created_at || '',
         status: link.students?.status || 'active'
       })),
       createdAt: parentRecord?.created_at || userProfile.created_at,

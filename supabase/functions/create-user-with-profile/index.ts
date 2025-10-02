@@ -123,23 +123,6 @@ Deno.serve(async (req) => {
     console.log('Supabase client initialized')
     console.log('Creating auth user with email:', requestData.email.trim())
 
-    // Step 1a: Check if user already exists
-    const { data: existingUser, error: getUserError } = await supabase.auth.admin.getUserByEmail(requestData.email.trim())
-    
-    if (existingUser && !getUserError) {
-      console.log('User already exists with email:', requestData.email.trim())
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: `A user with email address "${requestData.email.trim()}" already exists. Please use a different email address or contact an administrator if you need to update an existing user.` 
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 409, // Conflict status code
-        }
-      )
-    }
-
     // Step 1: Create auth user using admin API
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: requestData.email.trim(),
