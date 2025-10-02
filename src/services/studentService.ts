@@ -13,7 +13,7 @@ export class StudentService {
     const { data: studentsData, error: studentsError } = await supabase
       .from('students')
       .select('*')
-      .order('student_id');
+      .order('id');
 
     if (studentsError) {
       throw new Error(`Failed to fetch students: ${studentsError.message}`);
