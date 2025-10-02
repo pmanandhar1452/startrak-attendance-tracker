@@ -226,13 +226,9 @@ export class UserService {
             id,
             name,
             user_id,
-            email,
             level,
             subjects,
-            program,
-            avatar,
-            created_at,
-            status
+            created_at
           )
         `);
 
