@@ -375,7 +375,7 @@ export class UserService {
         throw new Error(`Failed to fetch current user data: ${fetchError.message}`);
       }
 
-      // Get current parent data
+      // Get current parent data (may not exist for non-parent users)
       const { data: currentParent, error: parentFetchError } = await supabase
         .from('parents')
         .select(`
@@ -386,7 +386,7 @@ export class UserService {
           )
         `)
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       if (parentFetchError) {
         throw new Error(`Failed to fetch current parent data: ${parentFetchError.message}`);
@@ -564,16 +564,16 @@ export class UserService {
       qrCodeUrl: parent.qr_code_url || undefined,
       linkedStudents: parentLinks.map((link: any) => ({
         id: link.students?.id || '',
-        name: link.students?.user_id || '',
+        name: link.students?.name || '',
         studentId: link.students?.id || '',
-        email: link.students?.email || '',
+        email: '',
         level: link.students?.level || '',
         subject: link.students?.subjects?.[0] || '',
         program: link.students?.program || undefined,
-        avatar: link.students?.avatar || undefined,
+        avatar: undefined,
         schedule: {},
         enrollmentDate: link.students?.created_at || '',
-        status: link.students?.status || 'active'
+        status: 'active'
       })),
       createdAt: parent.created_at,
       updatedAt: parent.updated_at
