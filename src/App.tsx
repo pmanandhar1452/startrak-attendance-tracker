@@ -9,17 +9,12 @@ import SessionsView from "./components/SessionsView";
 import StudentsView from "./components/StudentsView";
 import IDManagementView from "./components/IDManagementView";
 import QRScannerPage from "./components/QRScannerPage";
-import UserManagementView from "./components/UserManagementView";
-import AuditLogsView from "./components/AuditLogsView";
 import { useStudents } from "./hooks/useStudents";
 import { useAttendance } from "./hooks/useAttendance";
 import { useSessions } from "./hooks/useSessions";
 
 function App() {
   const [activeView, setActiveView] = useState('dashboard');
-  const [userSearchTerm, setUserSearchTerm] = useState('');
-  const [userCurrentPage, setUserCurrentPage] = useState(1);
-  const [userPageSize, setUserPageSize] = useState(10);
   
   const { students } = useStudents();
   const { attendanceRecords, updateAttendanceRecord } = useAttendance();
@@ -64,20 +59,6 @@ function App() {
         return <QRScannerPage onBack={() => setActiveView('dashboard')} />;
       case 'id-management':
         return <IDManagementView />;
-      case 'users':
-        return (
-          <UserManagementView
-            searchTerm={userSearchTerm}
-            currentPage={userCurrentPage}
-            pageSize={userPageSize}
-            onSearchChange={setUserSearchTerm}
-            onPageChange={setUserCurrentPage}
-            onPageSizeChange={setUserPageSize}
-            onViewStudentDetails={handleViewStudentDetails}
-          />
-        );
-      case 'audit-logs':
-        return <AuditLogsView />;
       default:
         return (
           <Dashboard 

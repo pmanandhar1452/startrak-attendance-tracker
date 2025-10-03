@@ -17,7 +17,6 @@ export default function Header({ activeView, onViewChange }: HeaderProps) {
     { id: 'sessions', label: 'Sessions', icon: BookOpen },
     { id: 'qr-scanner', label: 'QR Check-In', icon: QrCode },
     { id: 'id-management', label: 'ID Management', icon: CreditCard },
-    { id: 'users', label: 'Users', icon: UserPlus },
   ];
 
   return (
