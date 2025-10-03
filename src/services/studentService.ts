@@ -56,22 +56,14 @@ export class StudentService {
 
   static async createStudent(student: Omit<Student, 'id'>): Promise<Student> {
     // Check for conflicts in the schedule
-    await this.validateScheduleConflicts(student.schedule);
-
+    if (student.schedule && Object.keys(student.schedule).length > 0) {
+      await this.validateScheduleConflicts(student.schedule);
+    }
 
     const studentInsert: StudentInsert = {
       name: student.name,
-      student_id: student.studentId,
-      email: student.email,
       level: student.level as any,
-      subject: student.subject,
-      program: student.program || null,
-      avatar: student.avatar || null,
-      contact_number: student.contactNumber || null,
-      emergency_contact: student.emergencyContact || null,
-      enrollment_date: student.enrollmentDate,
-      status: student.status,
-      notes: student.notes || null
+      subjects: [student.subject]
     };
 
     const { data: studentData, error: studentError } = await supabase
@@ -81,21 +73,13 @@ export class StudentService {
       .single();
 
     if (studentError) {
-      // Handle specific constraint violations
-      if (studentError.code === '23505') { // Unique constraint violation
-        if (studentError.message.includes('students_email_key')) {
-          throw new Error('A student with this email address already exists.');
-        } else if (studentError.message.includes('students_student_id_key')) {
-          throw new Error('A student with this Student ID already exists.');
-        } else {
-          throw new Error('A student with this information already exists.');
-        }
-      }
       throw new Error(`Failed to create student: ${studentError.message}`);
     }
 
     // Insert schedule data
-    await this.updateStudentSchedule(studentData.id, student.schedule);
+    if (student.schedule && Object.keys(student.schedule).length > 0) {
+      await this.updateStudentSchedule(studentData.id, student.schedule);
+    }
 
     // Create audit log
     try {
@@ -106,11 +90,8 @@ export class StudentService {
         null,
         {
           name: studentData.name,
-          student_id: studentData.student_id,
-          email: studentData.email,
           level: studentData.level,
-          subject: studentData.subject,
-          status: studentData.status
+          subjects: studentData.subjects
         }
       );
     } catch (auditError) {
@@ -125,38 +106,11 @@ export class StudentService {
       await this.validateScheduleConflicts(updates.schedule, id);
     }
 
-    // If schedule is being updated, validate conflicts
-    if (updates.schedule) {
-      await this.validateScheduleConflicts(updates.schedule, id);
-    }
-
     const studentUpdate: StudentUpdate = {};
-    
+
     if (updates.name) studentUpdate.name = updates.name;
-    if (updates.studentId) studentUpdate.student_id = updates.studentId;
-    if (updates.email) studentUpdate.email = updates.email;
     if (updates.level) studentUpdate.level = updates.level as any;
-    if (updates.subject) studentUpdate.subject = updates.subject;
-    if (updates.program !== undefined) studentUpdate.program = updates.program || null;
-    if (updates.avatar !== undefined) studentUpdate.avatar = updates.avatar || null;
-    if (updates.contactNumber !== undefined) studentUpdate.contact_number = updates.contactNumber || null;
-    if (updates.emergencyContact !== undefined) studentUpdate.emergency_contact = updates.emergencyContact || null;
-    if (updates.enrollmentDate) studentUpdate.enrollment_date = updates.enrollmentDate;
-    if (updates.status) studentUpdate.status = updates.status;
-    if (updates.notes !== undefined) studentUpdate.notes = updates.notes || null;
-    
-    if (updates.name) studentUpdate.name = updates.name;
-    if (updates.studentId) studentUpdate.student_id = updates.studentId;
-    if (updates.email) studentUpdate.email = updates.email;
-    if (updates.level) studentUpdate.level = updates.level as any;
-    if (updates.subject) studentUpdate.subject = updates.subject;
-    if (updates.program !== undefined) studentUpdate.program = updates.program || null;
-    if (updates.avatar !== undefined) studentUpdate.avatar = updates.avatar || null;
-    if (updates.contactNumber !== undefined) studentUpdate.contact_number = updates.contactNumber || null;
-    if (updates.emergencyContact !== undefined) studentUpdate.emergency_contact = updates.emergencyContact || null;
-    if (updates.enrollmentDate) studentUpdate.enrollment_date = updates.enrollmentDate;
-    if (updates.status) studentUpdate.status = updates.status;
-    if (updates.notes !== undefined) studentUpdate.notes = updates.notes || null;
+    if (updates.subject) studentUpdate.subjects = [updates.subject];
 
     const { error: studentError } = await supabase
       .from('students')
@@ -165,11 +119,6 @@ export class StudentService {
 
     if (studentError) {
       throw new Error(`Failed to update student: ${studentError.message}`);
-    }
-
-    // Update schedule if provided
-    if (updates.schedule) {
-      await this.updateStudentSchedule(id, updates.schedule);
     }
 
     // Update schedule if provided
@@ -272,18 +221,13 @@ export class StudentService {
     return {
       id: student.id,
       name: student.name,
-      studentId: student.student_id,
-      email: student.email,
+      studentId: student.id,
+      email: '',
       level: student.level,
-      subject: student.subject,
-      program: student.program || undefined,
-      avatar: student.avatar || undefined,
-      contactNumber: student.contact_number || undefined,
-      emergencyContact: student.emergency_contact || undefined,
-      enrollmentDate: student.enrollment_date,
-      status: student.status,
-      notes: student.notes || undefined,
-      schedule
+      subject: student.subjects?.[0] || '',
+      schedule,
+      enrollmentDate: student.created_at || new Date().toISOString(),
+      status: 'active'
     };
   }
 }
