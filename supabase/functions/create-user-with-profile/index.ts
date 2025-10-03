@@ -30,20 +30,20 @@ Deno.serve(async (req) => {
       )
     }
 
-    // ✅ Initialize Supabase client with service role key
+    // ✅ Initialize Supabase client with Service Role Key
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // ✅ Step 1: Create Auth user in Supabase
+    // ✅ Step 1: Create Auth user
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: requestData.email.trim(),
       password: requestData.password.trim(),
       email_confirm: true,
       user_metadata: {
         full_name: requestData.fullName.trim(),
-        role_name: requestData.role
-      }
+        role_name: requestData.role,
+      },
     })
 
     if (authError || !authData.user) {
@@ -55,14 +55,14 @@ Deno.serve(async (req) => {
 
     const userId = authData.user.id
 
-    // ✅ Step 2: Call RPC to insert profile + role-specific rows
+    // ✅ Step 2: Call RPC (no more user_id column, use id directly)
     const { data: userResult, error: rpcError } = await supabase.rpc(
       'create_user_with_profile',
       {
         p_user_id: userId,
         p_full_name: requestData.fullName.trim(),
         p_role_name: requestData.role,
-        p_linked_students: requestData.linkedStudentIds || []
+        p_linked_students: requestData.linkedStudentIds || [],
       }
     )
 
@@ -75,9 +75,13 @@ Deno.serve(async (req) => {
       )
     }
 
-    // ✅ Step 3: Return success
+    // ✅ Step 3: Success response
     return new Response(
-      JSON.stringify({ success: true, user: authData.user, profile: userResult }),
+      JSON.stringify({
+        success: true,
+        user: authData.user,
+        profile: userResult,
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     )
 
