@@ -2,10 +2,11 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "./lib/supabase";
 import Header from "./components/Header";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { AuthProvider } from "./contexts/AuthContext"; // ✅ import your provider
+import { AuthProvider } from "./contexts/AuthContext";
 import Dashboard from "./components/Dashboard";
 import AttendanceView from "./components/AttendanceView";
 import SessionsView from "./components/SessionsView";
+import StudentsView from "./components/StudentsView";
 import QRScannerPage from "./components/QRScannerPage";
 import UserManagementView from "./components/UserManagementView";
 import AuditLogsView from "./components/AuditLogsView";
@@ -39,7 +40,7 @@ function App() {
           />
         );
       case 'students':
-        return <div className="p-6">Students view coming soon...</div>;
+        return <StudentsView />;
       case 'attendance':
         return (
           <AttendanceView
