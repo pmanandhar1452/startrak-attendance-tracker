@@ -1,37 +1,73 @@
+
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // must be service role key
+const supabaseAdmin = createClient(
+  Deno.env.get('SUPABASE_URL')!,
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!  // Must use service role
 )
 
 Deno.serve(async (req) => {
   try {
     const { email, password, fullName, role, linkedStudentIds } = await req.json()
 
-    // 1. Create user in Supabase Auth
-    const { data: user, error: createError } = await supabase.auth.admin.createUser({
+    // 1. Create the user in Supabase Auth
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true
     })
 
-    if (createError) throw createError
+    if (userError) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Auth user creation failed',
+        detail: userError.message
+      }), { headers: { 'Content-Type': 'application/json' }, status: 400 })
+    }
 
-    const userId = user.user.id
+    const userId = userData.user.id
 
-    // 2. Call SQL function to insert profile & role info
-    const { data, error } = await supabase.rpc('create_user_with_profile', {
-      p_id: userId,
-      p_full_name: fullName,
-      p_role_name: role,
-      p_linked_students: linkedStudentIds || []
+    // 2. Insert profile
+    const { error: profileError } = await supabaseAdmin.from('user_profiles').insert({
+      id: userId,
+      full_name: fullName,
+      role_name: role
     })
 
-    if (error) throw error
+    if (profileError) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Profile creation failed',
+        detail: profileError.message
+      }), { headers: { 'Content-Type': 'application/json' }, status: 400 })
+    }
 
-    return new Response(JSON.stringify({ success: true, data }), { status: 200 })
+    // 3. Role-specific inserts
+    if (role === 'parent') {
+      await supabaseAdmin.from('parents').insert({ user_id: userId })
+
+      if (linkedStudentIds && linkedStudentIds.length > 0) {
+        const parentLinks = linkedStudentIds.map((sid: string) => ({
+          parent_id: userId,
+          student_id: sid
+        }))
+        await supabaseAdmin.from('parent_student_links').insert(parentLinks)
+      }
+    } else if (role === 'instructor') {
+      await supabaseAdmin.from('instructors').insert({ user_id: userId })
+    }
+
+    return new Response(JSON.stringify({
+      success: true,
+      userId,
+      email
+    }), { headers: { 'Content-Type': 'application/json' } })
+
   } catch (err) {
-    return new Response(JSON.stringify({ success: false, error: err.message }), { status: 400 })
+    return new Response(JSON.stringify({
+      success: false,
+      error: 'Unexpected server error',
+      detail: err.message
+    }), { headers: { 'Content-Type': 'application/json' }, status: 500 })
   }
 })
