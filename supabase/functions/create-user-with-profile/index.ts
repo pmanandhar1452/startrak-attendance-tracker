@@ -30,64 +30,35 @@ Deno.serve(async (req) => {
       )
     }
 
-    // ✅ Initialize Supabase client with Service Role Key
+    // ✅ Initialize Supabase client with service role key
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // ✅ Step 1: Create Auth user
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    // ✅ Call RPC directly (no auth.admin.createUser anymore)
+    const { data, error } = await supabase.rpc('create_user_with_profile', {
       email: requestData.email.trim(),
       password: requestData.password.trim(),
-      email_confirm: true,
-      user_metadata: {
-        full_name: requestData.fullName.trim(),
-        role_name: requestData.role,
-      },
+      full_name: requestData.fullName.trim(),
+      role_name: requestData.role,
+      linked_student_ids: requestData.linkedStudentIds || []
     })
 
-    if (authError || !authData.user) {
+    if (error) {
       return new Response(
-        JSON.stringify({ success: false, error: authError?.message || 'Failed to create auth user' }),
+        JSON.stringify({ success: false, error: error.message }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
 
-    const userId = authData.user.id
-
-    // ✅ Step 2: Call RPC (no more user_id column, use id directly)
-    const { data: userResult, error: rpcError } = await supabase.rpc(
-      'create_user_with_profile',
-      {
-        p_user_id: userId,
-        p_full_name: requestData.fullName.trim(),
-        p_role_name: requestData.role,
-        p_linked_students: requestData.linkedStudentIds || [],
-      }
-    )
-
-    if (rpcError) {
-      // Rollback if DB setup fails
-      await supabase.auth.admin.deleteUser(userId)
-      return new Response(
-        JSON.stringify({ success: false, error: rpcError.message }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      )
-    }
-
-    // ✅ Step 3: Success response
     return new Response(
-      JSON.stringify({
-        success: true,
-        user: authData.user,
-        profile: userResult,
-      }),
+      JSON.stringify({ success: true, result: data }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     )
 
-  } catch (error) {
+  } catch (err) {
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: err.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }
