@@ -7,6 +7,7 @@ import Dashboard from "./components/Dashboard";
 import AttendanceView from "./components/AttendanceView";
 import SessionsView from "./components/SessionsView";
 import StudentsView from "./components/StudentsView";
+import IDManagementView from "./components/IDManagementView";
 import QRScannerPage from "./components/QRScannerPage";
 import UserManagementView from "./components/UserManagementView";
 import AuditLogsView from "./components/AuditLogsView";
@@ -62,7 +63,7 @@ function App() {
       case 'qr-scanner':
         return <QRScannerPage onBack={() => setActiveView('dashboard')} />;
       case 'id-management':
-        return <div className="p-6">ID Management view coming soon...</div>;
+        return <IDManagementView />;
       case 'users':
         return (
           <UserManagementView
