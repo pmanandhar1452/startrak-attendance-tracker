@@ -25,7 +25,7 @@ export default function Dashboard({ attendanceRecords, students, sessions }: Das
 
   const statCards = [
     {
-      title: 'Total Students',
+      title: 'Enrolled Students',
       value: stats.totalStudents,
       icon: Users,
       color: 'bg-blue-600',
