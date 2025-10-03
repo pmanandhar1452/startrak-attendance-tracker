@@ -56,11 +56,15 @@ Deno.serve(async (req: Request) => {
 
     const roleId = roleData.id;
 
-    // 2. Create auth user
+    // 2. Create auth user with metadata
+    // Note: The handle_new_user() trigger will automatically create the user_profile
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: true
+      email_confirm: true,
+      user_metadata: {
+        full_name: fullName
+      }
     });
 
     if (userError || !userData.user) {
@@ -69,19 +73,23 @@ Deno.serve(async (req: Request) => {
 
     const userId = userData.user.id;
 
-    // 3. Insert into user_profiles with role_id
+    // 3. Update user_profile with role information
+    // The trigger already created the profile, we just need to update it with role info
+    // Wait a moment for the trigger to complete
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     const { error: profileError } = await supabaseAdmin
       .from('user_profiles')
-      .insert({
-        id: userId,
+      .update({
         full_name: fullName,
         role_id: roleId,
         role_name: role,
         role: role
-      });
+      })
+      .eq('id', userId);
 
     if (profileError) {
-      throw new Error(`Failed to create user profile: ${profileError.message}`);
+      throw new Error(`Failed to update user profile: ${profileError.message}`);
     }
 
     // 4. Role-specific tables
