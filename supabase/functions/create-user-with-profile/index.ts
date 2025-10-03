@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
   try {
     const requestData: CreateUserRequest = await req.json()
 
-    // ✅ Step 1: Validate input
+    // ✅ Validate input
     if (!requestData.email?.trim() || !requestData.password?.trim() || !requestData.fullName?.trim()) {
       return new Response(
         JSON.stringify({ success: false, error: 'Email, password, and full name are required.' }),
@@ -30,12 +30,12 @@ Deno.serve(async (req) => {
       )
     }
 
-    // ✅ Step 2: Initialize Supabase client
+    // ✅ Initialize Supabase client with service role key
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // ✅ Step 3: Create Auth user (so it shows in Supabase Dashboard)
+    // ✅ Step 1: Create Auth user in Supabase
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: requestData.email.trim(),
       password: requestData.password.trim(),
@@ -53,11 +53,13 @@ Deno.serve(async (req) => {
       )
     }
 
-    // ✅ Step 4: Call stored procedure (handles DB inserts + rollback safety)
+    const userId = authData.user.id
+
+    // ✅ Step 2: Call RPC to insert profile + role-specific rows
     const { data: userResult, error: rpcError } = await supabase.rpc(
       'create_user_with_profile',
       {
-        p_user_id: authData.user.id,
+        p_user_id: userId,
         p_full_name: requestData.fullName.trim(),
         p_role_name: requestData.role,
         p_linked_students: requestData.linkedStudentIds || []
@@ -65,15 +67,15 @@ Deno.serve(async (req) => {
     )
 
     if (rpcError) {
-      // Cleanup if DB setup fails
-      await supabase.auth.admin.deleteUser(authData.user.id)
+      // Rollback if DB setup fails
+      await supabase.auth.admin.deleteUser(userId)
       return new Response(
         JSON.stringify({ success: false, error: rpcError.message }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
 
-    // ✅ Step 5: Return success
+    // ✅ Step 3: Return success
     return new Response(
       JSON.stringify({ success: true, user: authData.user, profile: userResult }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
